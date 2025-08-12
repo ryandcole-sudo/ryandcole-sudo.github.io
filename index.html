@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ryan Cole - Student Software Developer passionate about Mathematics, Science, and Technology">
+    <title>Ryan Cole - Software Developer</title>
+    
+    <script src="https://platform.linkedin.com/badges/js/profile.js" async defer type="text/javascript"></script>
+    
+    <style>
+        :root {
+            --primary-color: #088;
+            --accent-color: #cc5500;
+            --text-color: #1b1f23;
+            --bg-color: #ffffff;
+            --section-bg: #f8f9fa;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --border-radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+        }
+
+        h1, h2, h3 {
+            font-family: 'Georgia', cursive;
+            margin-bottom: 1rem;
+        }
+
+        /* Header and Navigation */
+        header {
+            background: var(--bg-color);
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        #nav-bar {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        #nav-bar a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        #nav-bar a:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .burg {
+            display: none;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem 2rem;
+            min-height: calc(100vh - 6rem);
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 0;
+            background: linear-gradient(135deg, var(--section-bg) 0%, #e3f2fd 100%);
+            border-radius: var(--border-radius);
+            margin-bottom: 3rem;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .hero .subtitle {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            font-weight: bold;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+
+        .cta-button:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .flag {
+            width: 80px;
+            height: auto;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: var(--section-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .section h2 {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Skills Grid */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .skill-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .skill-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .skill-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        /* Projects Grid */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+        }
+
+        .project-card .project-content {
+            padding: 1.5rem;
+        }
+
+        .project-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .tech-tag {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        /* Contact Form */
+        .contact-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: start;
+        }
+
+        .mail {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .mail input[type="text"],
+        .mail input[type="email"],
+        .mail textarea {
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .mail input:focus,
+        .mail textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 136, 136, 0.1);
+        }
+
+        .mail textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .mail input[type="submit"] {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .mail input[type="submit"]:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        /* Blog Subscription */
+        .blog-subscription {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            max-width: 500px;
+            margin: 2rem auto;
+        }
+
+        .blog-subscription h3 {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .blog-subscription input[type="email"] {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+        }
+
+        .blog-subscription button {
+            width: 100%;
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .blog-subscription button:hover {
+            background: var(--accent-color);
+        }
+
+        /* Messages and Loading */
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #4caf50;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            z-index: 1000;
+            display: none;
+        }
+
+        .message.error {
+            background: #f44336;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+        }
+
+        .thanks {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            background: #e8f5e8;
+            border-radius: var(--border-radius);
+            margin-top: 1rem;
+        }
+
+        .thanks .header {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin: 1rem 0;
+        }
+
+        /* LinkedIn Badge */
+        .LI-profile-badge {
+            margin: 2rem 0;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 1rem;
+            }
+
+            #nav-bar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                gap: 2rem;
+                font-size: 1.2rem;
+                display: none;
+            }
+
+            .burg {
+                display: block;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero .subtitle {
+                font-size: 1.1rem;
+            }
+
+            main {
+                padding: 5rem 1rem 2rem;
+            }
+
+            .contact-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .skills-grid,
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section {
+            animation: fadeIn 0.6s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <a href="#home" class="logo">Ryan Cole</a>
+            
+            <nav>
+                <span class="burg" id="burger-menu">
+                    <svg class="button" height="32" width="32" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="6" width="24" height="4" fill="currentColor"/>
+                        <rect x="4" y="14" width="24" height="4" fill="currentColor"/>
+                        <rect x="4" y="22" width="24" height="4" fill="currentColor"/>
+                    </svg>
+                    <svg class="close" height="32" width="32" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                        <line x1="4" y1="4" x2="28" y2="28" stroke="currentColor" stroke-width="4"/>
+                        <line x1="4" y1="28" x2="28" y2="4" stroke="currentColor" stroke-width="4"/>
+                    </svg>
+                </span>
+                <ul id="nav-bar">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#blog">Blog</a></li>
+                    <li><a href="#projects">Projects</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main id="home">
+        <section class="hero">
+            <h1>Ryan Cole</h1>
+            <p class="subtitle">Student Software Developer & Science Enthusiast</p>
+            <img class="flag" loading="lazy" alt="Jamaican Flag" src="assets/flag.gif"/>
+            <p>Passionate about learning, technology, and the intersection of mathematics and computer science.</p>
+            <a href="#contact" class="cta-button">Get In Touch</a>
+        </section>
+    </main>
+
+    <main id="about" style="display: none;">
+        <section class="section">
+            <h2>About Me</h2>
+            <p>I'm a dedicated student software developer from Jamaica with a deep passion for learning and technology. My interests span across multiple disciplines including mathematics, computer science, and the rich history of scientific and technological advancement.</p>
+            
+            <div class="skills-grid">
+                <div class="skill-card">
+                    <h3>💻 Programming</h3>
+                    <p>Experienced in web technologies, with a focus on creating clean, functional applications that solve real-world problems.</p>
+                </div>
+                <div class="skill-card">
+                    <h3>🔬 Science & Math</h3>
+                    <p>Strong foundation in mathematical concepts and scientific principles, applying analytical thinking to software development.</p>
+                </div>
+                <div class="skill-card">
+                    <h3>📚 Continuous Learning</h3>
+                    <p>Committed to staying current with emerging technologies and expanding knowledge across diverse technical domains.</p>
+                </div>
+                <div class="skill-card">
+                    <h3>✍️ Technical Writing</h3>
+                    <p>Passionate about sharing knowledge through blog posts covering mathematics, science, computer science, and technology history.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <main id="blog" style="display: none;">
+        <section class="section">
+            <h2>Blog</h2>
+            <p>I write about various topics including Mathematics, Science, Computer Science, and the fascinating history of science and technology. My goal is to make complex concepts accessible and share the wonder of discovery.</p>
+            
+            <div class="blog-subscription">
+                <h3>Get New Posts by Email</h3>
+                <form action="https://api.follow.it/subscription-form/TE4zcFNqTWtGa28yY2QwZTV1c1M2MCtVbXd1eDUwUGNLeTRXTG1BWWh1WTRCTmNGQWg0R2VNZCtCYmNIVHNCcVg0RmFzMnhwSW9HdlYvWldkMDNWcDdxS2U4RVdLUWlkTTJrckw4WlA0QmVQMHc2b1RRRzdoblRKa1pIS3NlcjF8MTRpQi9Mam1iZldMTEF4TVgwL2Y3QndCUVdrOXN6eWtPNWNjUkxrTDFOWT0=/8" method="post">
+                    <input type="email" name="email" placeholder="Enter your email" required>
+                    <button type="submit">Subscribe</button>
+                </form>
+            </div>
+
+        </section>
+    </main>
+
+    <main id="projects" style="display: none;">
+        <section class="section">
+            <h2>Projects</h2>
+            <p>Here are some projects I've worked on, showcasing my skills in web development, problem-solving, and technical implementation:</p>
+            <br>
+            <h3>Currently Working On</h3>
+            <div class="projects-grid">
+                
+                <div class="project-card">
+                    <div class="project-content">
+                        <h3>Almagest Calculator</h3>
+                        <p>Bringing to life the ancient mathematical astronomy of Ptolemy in the form of a series of calculators. Each calculator pertains to a particular chapter in the Almagest.</p>
+                        Live link: <a href="https://github.com">Link</a>
+                        <div class="tech-tags">
+                            <span class="tech-tag">HTML5</span>
+                            <span class="tech-tag">Javascript</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <main id="contact" style="display: none;">
+        <section class="section">
+            <h2>Contact Me</h2>
+            
+            <div class="contact-container">
+                <article>
+                    <h3>Send me a message</h3>
+                    <form class="mail" method="post" action="https://api.web3forms.com/submit">
+                        <input type="hidden" name="access_key" value="7bcf657c-9f1c-4c3f-b03a-5d22de7acef8"/>
+                        <input type="text" name="name" placeholder="Your Name" required/>
+                        <input type="email" name="email" placeholder="Your Email" required/>
+                        <textarea name="body" placeholder="Your message..." required></textarea>
+                        <input type="checkbox" name="botcheck" style="display: none"/>
+                        <input type="submit" value="Send Message"/>
+                    </form>
+                </article>
+                
+                <article>
+                    <h3>Connect with me</h3>
+                    <div class="badge-base LI-profile-badge" data-locale="en_US" data-size="large" data-theme="light" data-type="VERTICAL" data-vanity="ryandcole2" data-version="v1">
+                        <a class="badge-base__link LI-simple-link" href="https://jm.linkedin.com/in/ryandcole2?trk=profile-badge">LinkedIn Profile</a>
+                    </div>
+                    <p>I'm always interested in connecting with fellow developers, students, and anyone passionate about technology and science. Feel free to reach out!</p>
+                </article>
+            </div>
+            
+            <div class="thanks">
+                <svg class="image" width="100" height="100" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="#4caf50" stroke="#2e7d32" stroke-width="3"/>
+                    <path fill="none" stroke="white" stroke-width="6" stroke-linecap="round" d="M30 50 L45 65 L70 35"/>
+                </svg>
+                <div class="header">Thank You!</div>
+                <div>Your message has been received. I'll get back to you soon!</div>
+            </div>
+        </section>
+    </main>
+
+    <div class="message">
+        <span class="text"></span>
+    </div>
+
+    <svg class="loading" width="50" height="50" viewBox="0 0 50 50">
+        <circle cx="25" cy="25" r="20" fill="none" stroke="#ccc" stroke-width="3"/>
+        <circle cx="25" cy="25" r="20" fill="none" stroke="#088" stroke-width="3" stroke-dasharray="31.416" stroke-dashoffset="31.416">
+            <animate attributeName="stroke-dasharray" dur="2s" values="0 31.416;15.708 15.708;0 31.416" repeatCount="indefinite"/>
+            <animate attributeName="stroke-dashoffset" dur="2s" values="0;-15.708;-31.416" repeatCount="indefinite"/>
+        </circle>
+    </svg>
+
+    <script>
+        // Utility functions
+        const $ = document.querySelector.bind(document);
+        const $$ = document.querySelectorAll.bind(document);
+
+        // Navigation functionality
+        function initNavigation() {
+            const burgerMenu = $('#burger-menu');
+            const navBar = $('#nav-bar');
+            const burgerButton = burgerMenu.querySelector('.button');
+            const closeButton = burgerMenu.querySelector('.close');
+            
+            burgerButton.addEventListener('click', () => {
+                navBar.style.display = 'flex';
+                burgerButton.style.display = 'none';
+                closeButton.style.display = 'block';
+            });
+            
+            closeButton.addEventListener('click', () => {
+                navBar.style.display = 'none';
+                closeButton.style.display = 'none';
+                burgerButton.style.display = 'block';
+            });
+
+            // Navigation links
+            $$('#nav-bar a').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href');
+                    showPage(targetId);
+                    
+                    // Close mobile menu
+                    if (window.innerWidth <= 768) {
+                        navBar.style.display = 'none';
+                        closeButton.style.display = 'none';
+                        burgerButton.style.display = 'block';
+                    }
+                });
+            });
+        }
+
+        // Page navigation
+        function showPage(pageId) {
+            // Hide all main sections
+            $$('main').forEach(main => {
+                main.style.display = 'none';
+            });
+            
+            // Show target page
+            const targetPage = $(pageId);
+            if (targetPage) {
+                targetPage.style.display = 'block';
+                window.history.pushState({}, '', pageId);
+            }
+        }
+
+        // Contact form handling
+        function initContactForm() {
+            const form = $('.mail');
+            if (!form) return;
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                showLoading(true);
+
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        form.reset();
+                        showThanks();
+                    } else {
+                        showMessage('Failed to send message. Please try again.', 'error');
+                    }
+                } catch (error) {
+                    showMessage('Network error. Please try again.', 'error');
+                }
+                
+                showLoading(false);
+            });
+        }
+
+        // UI feedback functions
+        function showMessage(text, type = 'success') {
+            const message = $('.message');
+            const messageText = message.querySelector('.text');
+            
+            messageText.textContent = text;
+            message.className = `message ${type}`;
+            message.style.display = 'block';
+            
+            setTimeout(() => {
+                message.style.display = 'none';
+            }, 4000);
+        }
+
+        function showLoading(show) {
+            $('.loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showThanks() {
+            $('.mail').style.display = 'none';
+            $('.thanks').style.display = 'block';
+        }
+
+        // Handle browser navigation
+        function initBrowserNavigation() {
+            window.addEventListener('popstate', () => {
+                const hash = window.location.hash || '#home';
+                showPage(hash);
+            });
+            
+            // Initialize with current hash or default to home
+            const initialHash = window.location.hash || '#home';
+            showPage(initialHash);
+        }
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initNavigation();
+            initContactForm();
+            initBrowserNavigation();
+        });
+    </script>
+</body>
+</html>
