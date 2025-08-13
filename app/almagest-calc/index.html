@@ -1,0 +1,4196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Almagest Calculator</title>
+    
+        <style>
+        body{
+            font-family: sans-serif;
+            margin-bottom: 35vh;
+            margin-left: 20px;
+            padding-top:40px;
+        }
+        .toggle-button{
+            display:none;
+        }
+        .toggle-button+label{
+            display: inline-block;
+            padding:4px;
+            margin:4px;
+            width: 30px;
+            text-align: center;
+            border: 1px solid #445;
+            cursor: pointer;
+        }
+        .toggle-button:checked+label{
+            background: #ccc;
+            border: 2px solid black;
+        }
+
+        .sidebar button{
+            position:absolute;
+            z-index:1;
+            top:0;
+            left:0;
+        }
+        /* Initially hide sidebar ul*/
+        .sidebar ul{
+            display: none;
+            position: absolute;
+            background:white;
+            top: 0;
+            left:0;
+            padding:10px;
+            padding-top:60px;
+            list-style:none;
+        }
+
+        .sidebar ul a{
+            text-decoration: none;
+        }
+        .sidebar ul a:hover{
+            text-decoration: underline;
+            color: #53f;
+        }
+
+        .sidebar ul.sidebar-visible{
+            box-sizing: border-box;
+            display:block;
+            width:min(480px,100vw);
+            border-right: 1px solid black;
+            border-bottom: 1px solid black;
+        }
+
+        input, select{
+            padding: 5px;
+            margin:5px;
+            border:0 solid #555;
+            border-bottom:1px solid #222;
+            color:#111;
+            caret-color: blue;
+        }
+        input{
+            width: 4ch;
+        }
+
+        button{
+            background:#eee;
+            transition: all 0.2s;
+            border:1px solid black;
+        }
+        button:active{
+            background-color:#dad;
+            transform:translateY(2px);
+            box-shadow:0 5px #999 inset;
+        }
+        button:hover{
+            background:#ddd;
+        }
+
+        input:focus{
+            outline: none;
+            border-bottom: 2px double #004;
+            transform: scale(1.05) translateY(2px);
+        }
+        input:focus-visible, select:focus-visible{
+            outline: double;
+            outline: none;
+        }
+
+        input[type=checkbox]{
+            opacity: 0.4;
+        }
+
+        </style>
+        <script>
+            /* Adjustable settings */
+            const options = {
+                displaySg: false, //Print outputs in sexagesimal format
+                sgPrec: 2, // Number of sexagesimal digits after the decimal place
+                base60chord:false, //Display and input chords in base 60
+                timeHours: true, // Display time in hours, minutes and seconds
+                timeSecPrec: 0, // Number of digits to display for seconds in time 
+                decPrec: 6, // Number of digits to display after the decimal point
+                showZodiac: false, // Display the result as zodiac sign
+                timeAngle: true, // Display quantities such as right ascension as angle instead of time
+            };
+
+            function mod(a,b){
+                return ((a%b)  + b) %b;
+            }
+            function zig(a,b){
+                const c = Math.sign(Math.pow(-1,Math.floor(a/b)));
+                return mod(c*a,b);
+            }
+            function angle(a){
+                return mod(a,360);
+            }
+
+            function sign(number){
+                // Treat signed zeros as signed numbers
+                const s = Math.sign(number);
+
+                if(s === 0){
+                    if(Object.is(s,-0)){
+                        return -1;
+                    }else{
+                        return +1;
+                    }
+                }
+
+                return  s;
+            }
+
+            function angleQuadrant(angle,quadrant){
+                // Place an angle in the given quadrant
+                if(quadrant == 1){
+                    return angle;
+                }else if(quadrant == 2){
+                    return 180 -angle;
+                }else if(quadrant == 3){
+                    return angle + 180;
+                }else if(quadrant == 4){
+                    return 360 - angle;
+                }
+            }
+
+            function rangeMap(x,array1,array2){
+                let j = array1.findIndex(i => i >= x)-1;
+
+                if(x === array1[0]) return array2[0];
+
+                let m = (array2[j+1] - array2[j])/(array1[j+1] - array1[j]);
+                let c = array2[j] - m*array1[j];
+
+                let y = m*x + c;
+                return y;
+                
+            }
+
+            // Traditional rounding
+            function round(number, prec = 0){
+                number = Number(number);
+                const eps = Math.sign(number)*Math.pow(10,-(prec+2));
+                const rnd = (number+eps).toFixed(prec);
+                return  +rnd;
+            }
+
+            // Function to find the inverse of a given function with numerical output
+            function inverseOld(f,y, tolerance = 1e-9, maxIterations = 1000){
+                // Find initial interval
+                let low = -10;
+                let high = 10;
+
+                if(f(low) > f(high)){
+                    [low, high] = [high,low];
+                }
+
+                let i = 0;
+                while(f(low) > y && i<1000){
+                    low *= 2;
+                    i++;
+                }
+                i = 0;
+                while(f(high) < y && i<1000){
+                    high *= 2;
+                    i++;
+                }
+
+                // Bisection method
+                let iterations = 2;
+                while(iterations < maxIterations){
+                    const mid = (low + high)/2;
+                    const fMid = f(mid);
+
+                    if(Math.abs(fMid -y) < tolerance){
+                        return mid;
+                    }
+
+                    if(fMid < y){
+                        low = mid;
+                    } else{
+                        high = mid;
+                    }
+
+                    iterations++;
+                }
+                return NaN; //No inverse found within tolerance 
+            }
+
+            function inverse(f, y, tolerance = 1e-9, maxIterations = 1000) {
+                // Define the derivative of the function f
+                function derivative(f, x) {
+                    const h = 1e-10; // A small value for calculating the derivative
+                    return (f(x + h) - f(x)) / h;
+                }
+
+                // Initial guess (you can choose a better initial guess based on the function)
+                let x = y; // Starting with y as the initial guess
+                let iterations = 0;
+
+                while (iterations < maxIterations) {
+                    const f_x = f(x);
+                    const f_prime_x = derivative(f, x);
+                    
+                    // Newton's method update
+                    const x_new = x - (f_x - y) / f_prime_x;
+
+                    // Check for convergence
+                    if (Math.abs(x_new - x) < tolerance) {
+                        return x_new; // Found the inverse
+                    }
+
+                    x = x_new; // Update x for the next iteration
+                    iterations++;
+                }
+
+                return NaN;
+            }
+
+             /* Sexagesimal functions*/
+
+            //Convert a sexagesimal number to decimal
+            function sgd(number){
+                if(typeof(number) != "string"){
+                    number = String(number);
+                }
+
+                number = number.trim(); // Remove whitespace
+                //Seperate the integer and fractional parts
+                const parts = number.split(";");
+
+                if(parts.length > 2){
+                    console.error("More than 2 semicolons in sexagesimal number");
+                    return;
+                }
+
+                //Main case, with 2 numbers whole and part
+                if(parts.length == 2){
+                    const whole = parts[0].trim();
+                    const fraction = parts[1].trim();
+
+                    const wholeNum = frac(whole);
+                    const fracParts = fraction.split(",");
+                    const sg = sign(wholeNum);
+
+                    let fracNum = 0;
+
+                    for(let i=0; i<fracParts.length;i++){
+                        fracNum += sg*frac(fracParts[i])*Math.pow(1/60,i+1);
+                    }
+
+                    return wholeNum + fracNum;
+
+                }
+
+                //Either a fractional part or decimal
+                if(parts.length == 1){
+                    numParts = parts[0].split(",");
+
+                    if(numParts.length == 1){
+                        //Whole number
+                        return frac(numParts[0]);
+                    }else{
+                        let fracNum = 0;
+                        
+                        for(let i=0; i<numParts.length;i++){
+                            let sg = sign(frac(numParts[0])*frac(numParts[i]));
+                            fracNum += sg*frac(numParts[i])*Math.pow(1/60,i+1);
+                        }
+                        return fracNum;
+                    }
+                }
+
+            }
+
+            //Convert decimal to sexagesimal
+            function dsg(number, prec = 3) {
+                number = frac(number);
+                const sg = number < 0 ? "-" : "";
+                number = Math.abs(number);
+                
+                // Extract whole part
+                let whole = Math.floor(number);
+                let fraction = number - whole;
+                
+                const parts = [];
+                
+                if (fraction !== 0) {
+                    // Calculate all parts first, including one extra for rounding
+                    const tempParts = [];
+                    let tempFraction = fraction;
+                    
+                    for (let i = 0; i < prec; i++) {
+                        tempFraction *= 60;
+                        const part = Math.floor(tempFraction);
+                        tempParts.push(part);
+                        tempFraction = tempFraction - part;
+                    }
+                    
+                    // Check if we need to round up based on the next digit
+                    if (tempFraction * 60 >= 30) {
+                        // Round up - propagate carries
+                        let carry = 1;
+                        for (let i = tempParts.length - 1; i >= 0 && carry; i--) {
+                            tempParts[i] += carry;
+                            if (tempParts[i] >= 60) {
+                                tempParts[i] = 0;
+                                carry = 1;
+                            } else {
+                                carry = 0;
+                            }
+                        }
+                        
+                        // If carry propagated all the way up, increment whole part
+                        if (carry) {
+                            whole += 1;
+                        }
+                    }
+                    
+                    // Remove trailing zeros and copy to final parts array
+                    let lastNonZero = -1;
+                    for (let i = 0; i < tempParts.length; i++) {
+                        if (tempParts[i] !== 0) {
+                            lastNonZero = i;
+                        }
+                    }
+                    
+                    // Include all parts up to the last non-zero, or at least one part if all are zero
+                    const includeUpTo = lastNonZero >= 0 ? lastNonZero : 0;
+                    for (let i = 0; i <= includeUpTo; i++) {
+                        parts.push(tempParts[i]);
+                    }
+                }
+                
+                // Format output
+                if (parts.length === 0) {
+                    return sg + whole.toString();
+                }
+                
+                return sg + whole + ";" + parts.join(",");
+            }
+
+            // Fractional numbers of the form 5 1/2
+            function frac(number){
+                if(typeof(number) === "number") return number;
+                //Negative 0
+                number = number.trim();
+                if(Object.is(number,-0)){
+                    return -0;
+                }
+
+                if(typeof number !== "string"){
+                    number =  String(number);
+                }
+
+                const parts = number.split(" ");
+
+                if(parts.length === 1){
+                    // It might be a fraction or a whole number
+                    if(number.includes("/")){
+                        const [num, den] = number.split("/").map(Number);
+                        return num / den;
+                    }else{
+                        const num = Number(number);
+                        return num;
+                    }
+                }else if(parts.length === 2){
+                    // Mixed numbers
+                    const whole = Number(parts[0]);
+                    const sg = sign(whole);
+
+                    const [num, den] = parts[1].split("/").map(Number);
+                    return whole + sg*(num/den);
+                }else{
+                    console.error("Invalid Fraction");
+                    return NaN;
+                }
+            }
+
+            // Fractional Approximation
+            function fracApprox(num,maxDenom=1000){
+                let bestNum = 0;
+                let bestDen = 1;
+                let minErr = Math.abs(num);
+
+                for(let den = 1; den <= maxDenom ; den ++){
+                    const _num = Math.round(num*den);
+                    const approx = _num/den;
+                    const error = Math.abs(num - approx);
+
+                    if(error < minErr){
+                        minErr = error;
+                        bestNum = _num;
+                        bestDen = den;
+                    }
+                }
+                return bestNum + "/" + bestDen;
+            }
+
+            // Convert to unicode fraction
+            function uniFrac(fraction){
+                // Special cases
+
+                const sups = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+                const slash ="⁄";
+                const subs = "₀₁₂₃₄₅₆₇₈₉";
+
+                //Convert fraction to unicode
+                const [m,n] = fraction.split("/");
+
+                return m.split("").map(l => sups[l]).join("") + slash + n.split("").map(l =>  subs[l]).join("");
+
+            }
+
+            // Convert unicode fraction to regular fraction
+            function fracUni(uniFrac){
+                const sups = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+                const slash ="⁄";
+                const subs = "₀₁₂₃₄₅₆₇₈₉";
+
+                //Convert unicode to fraction
+                const [m,n] = uniFrac.split(slash);
+
+                return m.split("").map(l => sups.indexOf(l)).join("") + "/" + n.split("").map(l =>  subs.indexOf(l)).join("");
+            }
+
+            // Convert roman numeral to decimal
+            function roman(string){
+                const romanMap = {'I': 1,'V': 5,'X': 10,'L': 50,'C': 100,'D': 500,'M': 1000};
+                let total = 0; // Final integer value
+                let prevValue = 0; // Previous symbol's value for comparison
+
+                string = string.toUpperCase(); // For lower case roman numerals
+
+                for (let i = string.length - 1; i >= 0; i--) {
+                    const currentValue = romanMap[string[i]];
+
+                    // Check if current value is less than the previous value (e.g., IV = 4)
+                    if (currentValue < prevValue) {
+                        total -= currentValue; // Subtract the value
+                    } else {
+                        total += currentValue; // Add the value
+                    }
+
+                    prevValue = currentValue; // Update the previous value
+                }
+
+                return total;
+            }
+
+            function dRoman(number){
+                const romanMap = {'M': 1000, 'CM':900 ,'D': 500, 'CD': 400, 'C': 100, 'XC': 90, 'L': 50, 'XL': 40, 'X': 10, 'IX':9, 'V': 5, 'IV':4, 'I': 1};
+
+                if(number > 1000){
+                    return;
+                }
+
+                let roman = "";
+
+                for (let i in romanMap){
+                    while(number >= romanMap[i]){
+                        roman += i;
+                        number -= romanMap[i];
+                    }
+                }
+                return roman;
+            }
+
+            // Return the ordinal form of a number
+            function ordinal(number){
+                let th = "th";
+                if(number % 10 == 1 && number % 100 != 11){
+                   th = "st"; 
+                }
+                if(number % 10 == 2 && number % 100 != 12){
+                   th = "nd"; 
+                }
+                if(number % 10 == 3 && number % 100 != 13){
+                   th = "rd"; 
+                }
+                return number + th;
+            }
+
+            //Print days for a calendar
+            function renderDays(number){
+                let dateHTML = "";
+                let randomId = "date-" + Math.round(Math.random()*100000);
+
+                const daysDom = document.querySelector("#calendar .days :checked");
+                let checked = "";
+
+                for(let i=1; i<=number;i++){
+                    if(daysDom){
+                        const days = Number(daysDom.value);
+                        if(days == i){
+                            checked = "checked";
+                        }else{
+                            checked = "";
+                        }
+                    }
+                    dateHTML += `<input type="radio" class="toggle-button" name="${randomId}" value="${i}" id="${randomId}-${i}" ${checked}><label for="${randomId}-${i}">${i}</label>`;
+                    if(mod(i,5) == 0){
+                        dateHTML += "<br>";
+                    }
+                }
+                return dateHTML;
+            }
+
+            // Calculate days for the Egyptian Calendar given month and days
+            function calculateDays(month, days){
+                let totalDays = (month-1)*30 + days;
+                return totalDays;
+            }
+            
+            // Calculate number days since epoch for egyptian calendar
+            function calculateEpochDays(month,days,years){
+                let daysInYear = calculateDays(month,days);
+                let epochDays = (years-1)*365 + daysInYear-1;
+
+                return epochDays;
+            }
+
+            // Return the date in current calendar (Julian,  Gregorian) for
+            function dateFromEpoch(date,days){
+                const datetime = date.getTime(); //Time in milliseconds
+                const newtime = datetime + 86400000*days;
+                return new Date(newtime);
+            }
+
+            // Calculate the number of leap years between two year dates in the Julian Calendar (with astronomical (negative) numbering) 
+            function nLeapYears(start, end){
+                let leap_start = start + mod((4 - start%4),4);
+                let leap_end = end - mod(end,4);
+
+                let leapYears = (leap_end - leap_start)/4 + 1;
+                return leapYears;
+                
+            }
+
+            // Calculate the integer number of julian years
+            function integerYears(days){
+                return Math.floor(days/365.25);
+            }
+
+            // Julian Date Class
+            function JulianDate(year,month,day){
+                //March 1,year 0 epoch
+                const daysArray = [31,30,31,30,31,31,30,31,30,31,31,28];
+                const monthArray = ["Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb"];
+
+                const yearLength = 365.25;
+
+                let years = 0;
+                let days = 0;
+                let months = 0;
+                let epochDays = 0;
+                let dateString = "";
+
+                // Function overloading
+                if(!month){
+                    if(typeof(year) == "number"){
+                        // Then this is really supposed to be the number of epoch days
+                        epochDays = year;
+                        calculateYDM();
+                    }
+                    if(typeof(year) == "string"){
+                        // Then this really is the date written in the format 2001 Feb. 26
+                        dateString = year;
+                        fromString();
+                    }
+                }else{
+                    calculateEpoch();
+                }
+                
+                    this.years = parseInt(years);
+                    this.days = parseInt(days);
+                    this.months = months;
+                    this.epochDays = epochDays;
+
+                    this.toString = print;
+
+
+                // Calculate the epoch days from the year, month and days
+                function calculateEpoch(){
+                    // January and Febuary are the first months of the year
+                    if(monthArray.indexOf(month) == 10 || monthArray.indexOf(month) == 11) year--; 
+
+                    // Calculate integer days in full year from epoch
+                    const yearDays = Math.floor(1+yearLength*year);
+
+                    if(monthArray.indexOf(month) == 10 || monthArray.indexOf(month) == 11) year++; 
+
+                    // Convert Month to format
+                    if(typeof(month) == "string"){
+                    let _month = monthArray.indexOf(month);
+                    if(_month < 0){
+                        throw "Julian Date Error: Invalid month "+month;
+                    }
+                    month = _month;
+                    }
+
+                    // Calculate days to month
+                    let monthDays = 0;
+                    for(let i = 0; i < month;i++){
+                        monthDays+= daysArray[i];
+                    }
+
+                    epochDays = yearDays + monthDays + (day-1);
+                    years = year;
+                    days = day;
+                    months = month;
+                }
+
+                function calculateYDM(){
+                    years = Math.floor((epochDays-1462)/365.25) + 4;
+                    const isLeapYear = mod(years,4) == 0;
+
+                    const daysInYear = epochDays - Math.floor(365.25*years)  - (isLeapYear ?0:1);
+
+                    //Cycle through months
+                    let daysInMonth = 0;
+                    let totalDays = daysInYear;
+                    for(let i = 0; i < daysArray.length; i++){
+                       totalDays -= daysArray[i]; 
+                       
+                       // Leap year logic
+                       if(isLeapYear){
+                        daysArray[11] = 29;
+                       }
+
+                       if(totalDays <= 0){
+                         totalDays += daysArray[i];
+                         months = i;
+                         days = totalDays;
+                         break;
+                       }
+                    }
+                    days++;
+
+                  // January and February begin the year.
+                  if ((months == 10 || months == 11)){
+                    years++;
+                    if(isLeapYear){
+                        days--;
+                    }
+                  }
+                    daysInMonth = totalDays;
+                }
+
+                function fromString(){
+                   let dates = dateString.split(" ");
+                   console.log(dateString);
+                   year = dates[0]; 
+                   month = dates[1];
+                   day = dates[2];
+
+                   month = month.replace(".","");
+                   calculateEpoch();
+                }
+
+                function print(){
+                    let day = this.days
+                    let month = monthArray[this.months];
+                    let year = this.years;
+                    return `${year} ${month}. ${day}`;
+                }
+            }
+
+            // Function to convert time given in years, days, hours, minute, seconds to fractions of a day
+            function time(str){
+                // Time format example: 29d 5h 15m 20s
+
+                const parts = str.split(/[ydhms]/).map( s => s.trim());
+                const quantities = [0,0,0,0,0];
+
+                const units = "ydhms".split("");
+
+                //Sign
+                let sg = sign(sgd(parts[0]));
+                parts[0] = Math.abs(sgd(parts[0]));
+
+                // If no units given assume days
+                if(parts.length == 1){
+                    return sgd(parts[0]);
+                }
+
+                let i = 0;
+                let prev_index = 0;
+                
+                units.forEach( (unit,j) => {
+                    // The corresponding quantity exists and is in the correct order in relation to the previous
+                    if(str.indexOf(unit) > prev_index){
+                        quantities[j] = parts[i];
+                        prev_index = str.indexOf(unit);
+                        i++;
+                    }
+                });
+
+
+                const years = sgd(quantities[0]);
+                const days = sgd(quantities[1]);
+                const hours = sgd(quantities[2]);
+                const minutes = sgd(quantities[3]);
+                const seconds = sgd(quantities[4]);
+
+                console.log(quantities[1]);
+
+                const time = 365*years + days + hours/24 + minutes/1440 + seconds/86400;
+                return sg*time;
+
+            }
+
+            // Convert a decimal days to a time string
+            function time_string(number, prec = 0){
+                let sign = Math.sign(number);
+                let sign_str = sign < 0 ? "-":"";
+                number *= sign;
+
+                let str = "";
+                const days = Math.floor(number);
+
+                if(days != 0){
+                    str += days+"d ";
+                }
+                number -= days;
+                number *= 24;
+
+                const hours = Math.floor(number);
+                if(hours != 0){
+                    str += hours+"h ";
+                }
+                number -= hours;
+                number *= 60;
+
+                const minutes = Math.floor(number);
+                if(minutes != 0){
+                    str += minutes+"m ";
+                }
+                number -= minutes;
+                number *= 60;
+
+                const seconds = round(number,prec);
+                if(seconds != 0){
+                    str += seconds+"s ";
+                }
+
+                str = sign_str + str;
+
+                return str;
+                
+            }
+
+            function date(string){
+                const parts = string.split(" ");
+
+                // Support two formats
+                if(isNaN(parts[0])){
+                    // Egyptian Calendar
+                    if(parts.length < 4) return NaN;
+                    const era = parts[0];
+                    const year = parseInt(parts[1]);
+                    const month = roman(parts[2]);
+                    const day = parseFloat(parts[3]);
+
+                    console.log(month,day,year);
+
+                    const eDays = calculateEpochDays(month,day,year); //Epoch days for Egyptian Calendar;
+                    
+                    let epoch =  0;
+                    switch(era){
+                        case "Nabo": //Nabonassar w
+                                epoch = new JulianDate(-746,"Feb", 26).epochDays;
+                                break;
+                        case "Cal-I": // First Callipic
+                                epoch = new JulianDate(-329,"Jun",28).epochDays;
+                                break;
+                        case "Cal-II": // Second Callipic
+                                epoch= new JulianDate(-253,"Jun",28).epochDays;
+                                break;
+                        case "Cal-III": // Third Callipic
+                                epoch = new JulianDate(-177,"Jun",28).epochDays;
+                                break;
+                    }
+
+                    return epoch + eDays;
+                }else{
+                    // Julian Calendar
+                    if(parts.length < 3) return NaN;
+                    const year = parseInt(parts[0]);
+                    const month = parts[1].replace(".","");
+                    const day = sgd(parts[2]);
+
+                    const jDate = new JulianDate(year,month,day);
+                    return jDate.epochDays;
+                }
+            }
+
+            function datetime(string){
+                if(string.trim() === ""){
+                    return NaN;
+                }
+                if(!isNaN(sgd(string))){
+                    return sgd(string);
+                }
+
+                const parts = string.split(" ");
+                const days = date(string);
+
+                let c = 0;
+
+                
+                // Two cases
+                if(isNaN(parts[0])){
+                    c = 4; //Egyptian Calendar
+                }else{
+                    c = 3; // Julian /Gregorian calendar
+                }
+
+                const timeString = parts.splice(c).join(" ");
+                const timeFrac = time(timeString);
+
+                return Number(days) + Number(timeFrac);
+            }
+
+            function datetime_string(number){
+                number = parseFloat(number);
+                const days = Math.floor(number);
+                const part = number - days;
+                 
+                const date = new JulianDate(days).toString();
+                const time = time_string(part,options.timeSecPrec);
+
+                return date +" " + time;
+
+
+            }
+
+
+            // Function to find the chord of a given arc
+            function crd(arc){
+                return 2*Math.sin(arc*Math.PI/360);
+            }
+            function sin(angle){
+                return Math.sin(angle*Math.PI/180);
+            }
+
+            //Function to find the arc of a given chord
+            function arc(crd){
+                return 360*Math.asin(crd/2)/Math.PI;
+            }
+            function asin(x){
+                return Math.asin(x)*180/Math.PI;
+            }
+
+            // Draw a diagram of the given chord and arc
+            function drawChord(arc){
+                const chord = crd(arc);
+
+                const canvas = document.querySelector("#chords .diagram");
+                const ctx = canvas.getContext("2d");
+
+                ctx.clearRect(0,0,500,500);
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#444";
+                ctx.beginPath();
+                ctx.arc(100,100,90,0,2*Math.PI);
+                ctx.stroke();
+
+                ctx.lineWidth = 6;
+                ctx.strokeStyle = "black";
+                ctx.beginPath();
+                ctx.arc(100,100,90,Math.PI*(1-arc/360), Math.PI*(1+arc/360));
+                ctx.stroke();
+
+                // Draw the chord
+                x1 = 100 + 90*Math.cos(Math.PI*(1-arc/360))
+                y1 = 100 + 90*Math.sin(Math.PI*(1-arc/360))
+                x2 = 100 + 90*Math.cos(Math.PI*(1+arc/360))
+                y2 = 100 + 90*Math.sin(Math.PI*(1+arc/360))
+
+                ctx.beginPath();
+                ctx.strokeStyle = "red";
+                ctx.lineWidth = 3;
+
+                ctx.moveTo(x1,y1);
+                ctx.lineTo(x2,y2);
+                ctx.stroke();
+
+            }
+
+            // Declination
+            function calculateDeclination(longitude,obliquity){
+                const sin_dec = sin(obliquity)*sin(longitude);
+                const declination = asin(sin_dec);
+                return declination;
+            }
+            function calculateLongitudeFromDeclination(declination,obliquity){
+                const sin_long = sin(declination)/sin(obliquity);
+                const longitude = asin(sin_long);
+                return longitude;
+            }
+
+            // Right ascension
+            function calculateRightAscensionFromDeclination(declination,obliquity){
+                const sin_ra = (sin(90 - obliquity)*sin(declination) )/( sin(obliquity) * sin(90 - declination));
+                const ra = asin(sin_ra);
+                return ra;
+            }
+            function calculateDeclinationFromRightAscension(ra,obliquity){
+                const tan_dec = sin(obliquity)*sin(ra)/sin(90 - obliquity);
+                
+                //Arc tangent
+                const dec = asin(tan_dec/Math.sqrt(1+tan_dec**2));
+                return dec;
+            }
+
+            // Rising Amplitude
+            function calculateRisingAmplitude(dayLength,declination){
+                const timeDegrees = dayLength*360;
+
+                const cos_ra = sin(90 + declination)*sin(timeDegrees/2);
+                const ra = 90 - asin(cos_ra);
+                return ra;
+            }
+            function calculateLongestDayFromAmplitude(risingAmplitude,declination){
+                const half_sin_td = sin(90 - risingAmplitude)/sin(90 + declination);
+                const timeDegrees = 2*asin(half_sin_td);
+
+                const longestDay = timeDegrees/360;
+                return longestDay;
+            }
+
+            // Terrestrial Latitude
+            function calculateLatitudeFromLongestDay(longestDay,obliquity){
+                // Day cannot be longer than 24 hours
+                if(longestDay > 1 ||longestDay < 0) return NaN;
+
+                const timeDegrees = longestDay*360;
+                const num = sin(90 - obliquity)*sin(90 - timeDegrees/2); 
+                const den2 = 1 - Math.pow(sin(90 - obliquity)*sin(timeDegrees/2),2);
+                const den = Math.sqrt(den2);
+
+                const sin_lat = num/den;
+                const lat = -asin(sin_lat);
+                return lat;
+            }
+            function calculateLongestDayFromLatitude(latitude,obliquity){
+                const calcLat = (long) => calculateLatitudeFromLongestDay(long,obliquity);
+                return inverseOld(calcLat,latitude);
+            }
+
+            // Shadow Lengths
+            function calculateShadowLength(latitude,declination){
+                if(!declination) declination = 0;
+                const zenithAngle = declination - latitude;
+                if(Math.abs(zenithAngle) > 90) return Infinity*zenithAngle;
+                const length = sin(zenithAngle)/sin(90 - zenithAngle);
+                return length;
+            }
+            function calculateLatitudeFromShadow(length,declination){
+                //arc tan
+                const zenithAngle = asin(length/Math.sqrt(1+length**2));
+                const latitude = declination -  zenithAngle;
+                return latitude;
+            }
+            function determineClimateZone(winterShadow, summerShadow){
+                if(winterShadow == -summerShadow){
+                    return "Equatorial Region (summer shadow equals winter shadow)";
+                }else if(Math.abs(winterShadow + summerShadow) < 0.15){ //Approximately equal
+                    return "Equatorial Region (summer shadow almost equal winter shadow)";
+                }else if(winterShadow*summerShadow < 0){
+                    return "Tropical Region (shadows go in both direction)";
+                }else if(winterShadow*summerShadow == Infinity){
+                    return "Arctic Region (shadows at noon get arbitrarly large)";
+                }else{
+                    return "Temperate Region (shadows in the same direction)";
+                }
+            }
+
+            // Oblique Ascensions
+             function calculateObliqueAscension(terrestrialLatitude,longitude,obliquity){
+                const num1 = sin(longitude)*sin(90 - obliquity);
+                const den1_sq = 1 - Math.pow(sin(longitude)*sin(obliquity),2);
+                den1 = Math.sqrt(den1_sq);
+
+                const num2 = sin(longitude)*sin(obliquity)*sin(terrestrialLatitude)/sin(90 + terrestrialLatitude);
+                const den2_sq = 1 - Math.pow(sin(longitude)*sin(obliquity),2)
+                const den2 = Math.sqrt(den2_sq);
+
+                let RA = asin(num1/den1);
+                let AD = asin(num2/den2);
+
+                //Second quadrant
+                if(longitude > 90 && longitude < 180){
+                    RA = 90 + (90 - RA);
+                }else if(longitude >= 180 && longitude < 270){
+                    RA = 180 - RA;
+                }else if(longitude >= 270 && longitude < 360){
+                    RA = 270 + (90 + RA);
+                }
+                let obliqueAscension = RA - AD;
+                
+                if(obliqueAscension <0){
+                   // obliqueAscension = 180 - obliqueAscension;
+                }
+
+                return obliqueAscension;
+             }
+
+             // Length of day and night
+             function calculateDaytimeLength(terrestrialLatitude,longitude,obliquity){
+                const sunOA = calculateObliqueAscension(terrestrialLatitude,angle(longitude),obliquity);
+                const oppositeSunOA = calculateObliqueAscension(terrestrialLatitude,angle(longitude+180),obliquity);
+
+                const rightAscension = calculateObliqueAscension(0,longitude,obliquity);
+                const obliqueAscension = calculateObliqueAscension(terrestrialLatitude,longitude,obliquity);
+
+                const ascensionalDifference = rightAscension - obliqueAscension;
+
+               // const timeDegrees = 180 + 2*ascensionalDifference;
+
+               const timeDegrees = angle(oppositeSunOA - sunOA);
+                return timeDegrees/360;
+             }
+
+             // Convert between seasonal hours and equal hours
+             function calculateEqualTime(seasonalTime,latitude,longitude,obliquity){
+                seasonalTime = mod(seasonalTime,1);
+                const dayLength = calculateDaytimeLength(latitude,longitude,obliquity);
+                const nightLength = 1 - dayLength;
+
+                const equalHour = 1/24;
+                const dayHour = dayLength/12;
+                const nightHour = nightLength/12;
+
+                const hoursPM = 6*dayHour;
+                const hoursNight = hoursPM + 12*nightHour;
+                const hoursAM = hoursNight + 6*dayHour;
+
+                const hoursEqual = [0,6*equalHour,18*equalHour,24*equalHour];
+                const hoursSeasonal = [0,hoursPM,hoursNight,hoursAM];
+
+                let equalTime = rangeMap(seasonalTime,hoursEqual,hoursSeasonal);
+                return equalTime;
+
+             }
+
+             function calculateSeasonalTime(equalTime,latitude,longitude,obliquity){
+                equalTime = mod(equalTime,1);
+                const dayLength = calculateDaytimeLength(latitude,longitude,obliquity);
+                const nightLength = 1 - dayLength;
+
+                const equalHour = 1/24;
+                const dayHour = dayLength/12;
+                const nightHour = nightLength/12;
+
+                const hoursPM = 6*dayHour;
+                const hoursNight = hoursPM + 12*nightHour;
+                const hoursAM = hoursNight + 6*dayHour;
+
+                const hoursEqual = [0,6*equalHour,18*equalHour,24*equalHour];
+                const hoursSeasonal = [0,hoursPM,hoursNight,hoursAM];
+
+                let seasonalTime = rangeMap(equalTime,hoursSeasonal,hoursEqual);
+                return seasonalTime;
+
+             }
+
+             // Time of day and horoscopes: ascendant and midheaven
+             function calculateAscendant(equalTime,longitude,terrestrialLatitude,obliquity,morningHours){
+                // Convert to hours after sunrise
+                if(morningHours == null)
+                    morningHours = calculateDaytimeLength(terrestrialLatitude,longitude,obliquity)/2;
+                equalTime = mod(equalTime + morningHours,1);
+                const sunOA = calculateObliqueAscension(terrestrialLatitude,longitude,obliquity);
+                const ascendantOA = angle(360*equalTime + sunOA);
+
+                const calcOblique = (long) => calculateObliqueAscension(terrestrialLatitude,angle(long),obliquity); //Function to be inverted
+
+                let ascendant = inverse(calcOblique,ascendantOA);
+
+                // Deal with an edge case
+                if(isNaN(ascendant)){
+                    ascendant = (inverse(calcOblique,ascendantOA+0.01) + inverse(calcOblique,ascendantOA-0.01) )/2;
+                }
+                return ascendant;
+             }
+
+             function calculateMidheaven(equalTime,longitude,obliquity){
+                const midHeaven = calculateAscendant(equalTime,longitude,0,obliquity,0);
+                return  midHeaven;
+             }
+
+             // Ecliptic angles
+             function calculateZenithDistance(latitude,eclipticLongitude,equalTime,obliquity){
+                const midheaven = calculateMidheaven(equalTime,eclipticLongitude,obliquity);
+                const ascendant = calculateAscendant(equalTime,eclipticLongitude,latitude,obliquity);
+
+                const declinationMH = calculateDeclination(midheaven,obliquity); //Declination of midheaven
+                const zenithMH = latitude - declinationMH;
+
+                const cos_Z = sin(90 - zenithMH)*sin(ascendant - eclipticLongitude)/sin(ascendant - midheaven);
+
+                const Z = 90 - asin(cos_Z);
+
+                return Z;
+             }
+             function calculateEastAngle(latitude,eclipticLongitude,equalTime,obliquity){
+                const midheaven = calculateMidheaven(equalTime,eclipticLongitude,obliquity);
+                const ascendant = calculateAscendant(equalTime,eclipticLongitude,latitude,obliquity);
+
+                const zenithDistance = calculateZenithDistance(latitude,eclipticLongitude,equalTime,obliquity);
+                const elevation = 90 -  zenithDistance;
+
+                const longDiff = ascendant - eclipticLongitude;
+
+                const cos_ea = -sin(elevation)/sin(90 - elevation)*sin(90 - longDiff)/sin(longDiff);
+
+                let eastAngle = 90 - asin(cos_ea);
+
+
+                const angleDirection = (angle(ascendant - midheaven) < zig(eclipticLongitude,180)); //Angle direction opposite
+
+                /* if(angleDirection) */
+                /*     eastAngle = 180 - eastAngle; */
+
+
+                return eastAngle;
+             }
+
+             // Calculate Length of Tropical Year
+             function calculateYearLength(period,initialGuess=365.25){
+                let numYears = Math.round(period/initialGuess); //If guess is close enough, this  should be an approximate integer number of years
+                let quaters = Math.round(4*(period/initialGuess - numYears));
+                console.log(quaters);
+                let yearLength = period/(numYears+quaters/4);
+                return yearLength;
+             }
+
+             // Calculate mean motion and orbital revolutions
+             function calculateMeanMotion(time,orbitalPeriod){
+                let meanSpeed = 1/orbitalPeriod;
+                let meanPosition = angle(360*time*meanSpeed);
+                return meanPosition;
+             }
+
+             function calculateNumberOfRevolutions(time,orbitalPeriod){
+                let numRevolutions = Math.floor(time/orbitalPeriod);
+                return numRevolutions;
+             }
+
+             function calculateTimeFromRevolutions(numRevolutions,meanPosition,orbitalPeriod){
+                 let t = orbitalPeriod*(numRevolutions+meanPosition/360);
+                 return t;
+             }
+
+             // Calculate Equation of Eccentric/Epicyclic Anomaly
+             function calculateEquationOfAnomaly(argument,eccentricity,radius=1){
+                const tan_q = -eccentricity*sin(argument)/(radius + eccentricity*sin(90 - argument));
+                //atan
+                const equation = asin(tan_q/Math.sqrt(1+tan_q**2));
+                return equation;
+             }
+
+             // Calculate Epoch of the Sun's Mean Motion from observation
+             function calculateSunEpoch(t,apogee,eccentricity,lengthYear,longitude=180,epoch){
+                    if(!epoch)
+                        epoch = new JulianDate(-746,"Feb", 26).epochDays; // Nabonassar epoch
+
+                    // Compute the equation of anomaly 
+                    const sin_eq = eccentricity*sin(longitude - apogee);
+                    const eq = asin(sin_eq);
+
+                    // Mean anomaly at point of observation
+                    meanAnomaly = angle(longitude - apogee + eq);
+
+                    // Calculate the mean anomaly at epoch 
+                    const m = calculateMeanMotion(t - epoch,lengthYear);
+                    const ma_epoch = angle(meanAnomaly - m);
+
+                    // Mean Longitude at epoch
+                    const long_epoch = angle(ma_epoch + apogee);
+
+                    return [
+                        ma_epoch,long_epoch
+                    ];
+
+             }
+
+             // Calculate Sun's Apogee and Eccentricity 
+             function calculateSunParameters(spring,summer,yearLength){
+                const springMotion = calculateMeanMotion(spring,yearLength);
+                const summerMotion = calculateMeanMotion(summer,yearLength);
+
+                const totalMotion  = springMotion + summerMotion;
+
+                const meanExcess = (totalMotion - 180)/2;
+                const springExcess = springMotion -meanExcess - 90;
+
+                const x = sin(meanExcess);
+                const y = sin(springExcess);
+
+                const eccentricity = Math.sqrt(x**2 + y**2);
+                let apogee = angle(asin(x/eccentricity));
+
+                // Determine quadrant
+                if(totalMotion >= 180){
+                    if(springMotion>summerMotion){
+                        // Apogee remains the same
+                    }else{
+                        apogee = 180 - apogee; // Towards spring
+                    }
+                }else{
+                    if(springMotion >= summerMotion){
+                        apogee = 180 + apogee; //Autumn
+                    }else{
+                        apogee = 360 - apogee; // Winter
+                    }
+                }
+
+                const parameters = {
+                    apogee,
+                    eccentricity
+                }
+                return parameters;
+             }
+             
+             // Calculate Position of the sun
+             function calculateSunPosition(t,apogee,eccentricity,yearLength,ma_epoch,long_epoch,epoch){
+                    if(!epoch)
+                        epoch = new JulianDate(-746,"Feb", 26).epochDays; // Nabonassar epoch
+                    t = t - epoch;
+
+                    console.log(t,apogee,eccentricity,yearLength, ma_epoch,long_epoch);
+
+                    // Calculate mean motion
+                    const m = calculateMeanMotion(t,yearLength);
+
+                    // Find mean anomaly
+                    const ma = angle(ma_epoch + m); 
+
+                    // Find the equation of anomaly
+                    const eq = calculateEquationOfAnomaly(ma,eccentricity);
+
+                    // True anomaly
+                    const ta = angle(ma + eq);
+
+                    // Mean longitude
+                    const mlong = angle(long_epoch + m);
+
+                    // True Longitude
+                    const long = angle(long_epoch + m + eq);
+
+                    return{
+                        longitude:long,
+                        meanLongitude: mlong,
+                        meanAnomaly:ma,
+                        trueAnomaly:ta,
+                    };
+
+             }
+
+             function drawSunPosition(apogee,meanAnomaly){
+                const canvas = document.querySelector("#sun-position canvas");
+                const ctx = canvas.getContext("2d");
+
+                const longitude = angle(meanAnomaly + apogee); //Mean longitude
+
+                ctx.clearRect(0,0,200,200);
+
+                // Draw the circle orbit of the sun
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#444";
+                ctx.beginPath();
+                ctx.arc(100,100,90,0,2*Math.PI);
+                ctx.stroke();
+
+                //Draw the center of the circle
+                ctx.beginPath();
+                ctx.fillStyle = "black";
+                ctx.arc(100,100,2,0,2*Math.PI);
+                ctx.fill();
+
+                // Draw the Earth
+                ctx.beginPath();
+                ctx.fillStyle = "blue";
+                ctx.arc(100 - 12*sin(apogee),100 + 12*sin(90 - apogee),4,0,2*Math.PI);
+                ctx.fill();
+
+                // Draw the sun
+                ctx.beginPath();
+                ctx.fillStyle = "yellow";
+                ctx.arc(100 + 90*sin(longitude), 100  - 90*sin(90-longitude),6,0,2*Math.PI);
+                ctx.fill();
+
+                // Draw apsidal line
+                ctx.beginPath();
+                ctx.lineWidth = 1;
+                ctx.setLineDash([5,3]);
+                ctx.moveTo(100 - 90*sin(apogee), 100 + 90*sin(90-apogee));
+                ctx.lineTo(100 + 90*sin(apogee), 100 - 90*sin(90-apogee));
+                ctx.stroke();
+                ctx.setLineDash([]);
+             }
+
+             // Calculate Equation of Time
+            function calculateEquationOfTime(t1,t2,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch,obliquity){
+                    const position1 = calculateSunPosition(t1,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch);
+                    const position2 = calculateSunPosition(t2,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch);
+
+                    const ra1 = calculateObliqueAscension(0,position1.longitude,obliquity);
+                    const ra2 = calculateObliqueAscension(0,position2.longitude,obliquity);
+
+                    const diff_ra = ra2 - ra1;
+                    const diff_long = position2.meanLongitude - position1.meanLongitude;
+
+                    const eqTime = (diff_ra - diff_long)/360;
+                    return eqTime;
+
+            }
+
+             // Calculate parameters for epicycle model
+             function calculateEpicycleParameters(a1,a2,p1,p2){
+                const X = sin(p1)/sin((a1/2) + p1);
+                const Y = sin(p2)/sin((a2/2) + p2);
+                const Z = sin((a1+a2)/2);
+                const W = sin(90 - ((a1+a2)/2));
+
+                const dr = 2*Math.sqrt( (Z**2)  / ( (X - Y*W)**2 + (Y*Z)**2 ));
+
+                const a3 = 2*asin(dr*Y/2);
+
+                const pr = 2*sin((a2 - a3)/2);
+
+                const R = Math.sqrt(1 + dr*(dr + pr));
+
+                const radius = 1/R;
+
+                const um = (a2 + a3)/2;
+
+                const u = asin(pr/2);
+
+                const v = asin(dr*radius + radius*sin(u)); 
+
+                // Mean Anomaly at second observation
+                const ano = 180 - u - v;
+
+                // Apogee at second observation
+                const apogee = 180 - u - v;
+
+                //Equation of anomaly at second observation
+                const eq = 90 - v;
+
+                return {
+                    radius,ano,eq
+                }
+     
+             }
+
+             // Correction to Mean Motions
+             function correctMeanMotion(orbitalPeriod,time,meanMotion){
+                const N = calculateNumberOfRevolutions(time,orbitalPeriod);
+
+                const meanSpeed = (N*360 + angle(meanMotion))/(360*time);
+                const w = 1/meanSpeed;
+                return w;
+             }
+
+             // Calculate Epoch Position
+             function calculateEpochPosition(t,position,orbitalPeriod,epoch){
+
+                const motion = calculateMeanMotion(t - epoch, orbitalPeriod);
+                const epoch_pos = angle(position - motion);
+                return epoch_pos;
+
+             }
+             
+             // Epicycle distance relative to a unit deferent
+             function calculateEpicycleDistance(meanAnomaly,radius){
+                const x = 1 + radius*sin(90+meanAnomaly);
+                const y= radius*sin(meanAnomaly);
+
+                const distance = Math.sqrt(x**2 + y**2);
+                return distance;
+             }
+
+             // Lunar Epicycle distance
+             function calculateLunarEpicycleDistance(eccentricity,elongation){
+                 const s = eccentricity;
+                 const m = elongation;
+
+                 const sin_alpha = s/(1-s)*sin(2*m);
+                 const alpha = asin(sin_alpha);
+
+                 const distance = (1-s)*Math.sqrt(1-sin_alpha**2)+s*sin(90-2*m);
+                 return distance;
+             }
+
+
+             // Length of seasons
+             const dataSunSeasonsLength = [];
+
+             function replaceZodiacString(str){
+                str = str.replace(":ari","♈️");
+                str = str.replace(":tau","♉️");
+                str = str.replace(":gem","♊️");
+                str = str.replace(":can","♋️");
+                str = str.replace(":leo","♌️");
+                str = str.replace(":vir","♍️");
+                str = str.replace(":lib","♎️");
+                str = str.replace(":sco","♏️");
+                str = str.replace(":sag","♐️");
+                str = str.replace(":cap","♑️");
+                str = str.replace(":aqu","♒️");
+                str = str.replace(":pis","♓️");
+
+                return str;
+             }
+
+             function calculateZodiacString(str){
+               const matches = replaceZodiacString(str).match(/[♈️♉️♊️♋️♌️♍️♎️♏️♐️♑️♒️♓️]/);
+
+               let zodiac = "";
+
+               if(matches) {
+                    zodiac = matches[0];
+               }else{
+                    return str;
+               }
+
+               str = replaceZodiacString(str);
+               str = str.slice(0,str.indexOf(zodiac));
+               const signs = "♈️♉️♊️♋️♌️♍️♎️♏️♐️♑️♒️♓️";
+               const value = sgd(str);
+               const sign = signs.indexOf(zodiac)/2;
+
+               const degrees = angle(30*sign + value);
+
+               return outputText(degrees,"angle");
+
+             }
+
+             function  convertToZodiac(number){
+                const value = sgd(number);
+
+                const sign = 2*Math.floor(angle(value)/30);
+                const degrees = mod(value,30);
+                const signs = "♈️♉️♊️♋️♌️♍️♎️♏️♐️♑️♒️♓️";
+
+                return output(degrees)+signs.charAt(sign);
+             }
+             function  findZodiacText(number){
+                const value = sgd(number);
+                const sign = Math.floor(angle(value)/30);
+                const degrees = mod(value,30);
+
+                const signs = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo","Libra","Scorpius","Sagittarius","Capricornus","Aquarius","Pisces"];
+                return output(degrees) + " " + signs[sign];
+             }
+             
+
+             /* Display classes */
+             function output(number,format){
+                let suffix = "";
+
+                if(!format){
+                    format = {};
+                }
+                if(format.type === "time-angle"){
+                    if(options.timeAngle){
+                        format.type = "angle";
+                    }else{
+                        number = parseFloat(number)/360;
+                        format.type = "time";
+                    }
+                }
+                        // no break
+                switch(format.type){
+                    case "text":
+                      return number;
+                      break;
+                    case "chord":
+                        if(options.base60chord){
+                            number = number*60;
+                        }
+                        break;
+                    case "time":
+                        if(options.timeHours){
+                            return time_string(number,format.timeSecPrec);
+                        }else{
+                            if(Math.abs(number) < 1){ // Smaller than a day, display as fraction hours
+                                number *= 24;
+                                suffix = "h";
+                            }else{
+                                suffix = "d";
+                            }
+                        }
+                        break;
+                    case "angle":
+                        if(format.subtype === "zodiac" && options.showZodiac){
+                            return convertToZodiac(number) + suffix;
+                        }
+                        break;
+                    case "date":
+                       break;
+                    case "datetime":
+                       return datetime_string(number);
+                       break;
+                    case "number":
+                        // no break
+                    default:
+                }
+                if(options.displaySg){
+                    return dsg(number, format.sgPrec) + suffix;
+                }else{
+                    return round(number,format.decPrec) + suffix;
+                }
+             }
+
+             function  outputText(number,type){
+                const format = {
+                    type,
+                    sgPrec: options.sgPrec,
+                    decPrec: options.decPrec,
+                    timeSecPrec: options.timeSecPrec,
+
+                };
+                return output(number,format);
+             }
+
+             function showTip(el,format){
+                if(!format) format = {};
+
+                switch(format.type){
+                    case "angle":
+                        if(format.subtype === "zodiac" && options.showZodiac){
+                            return el.title = findZodiacText(getValue(el)) + " - "  + getValue(el)  + "°";
+                        }
+                    break;
+                    default:
+                        return el.title = "";
+                }
+             }
+
+             function display(el,value){
+                const elDom = document.querySelector(el);
+
+                const format = {
+                 type: elDom.dataset.type,
+                 subtype:elDom.dataset.subtype,
+                 sgPrec:options.sgPrec,
+                 decPrec:options.decPrec,
+                 timeSecPrec:options.timeSecPrec
+                };
+
+                //Precision
+                if(elDom.dataset.sgPrec){
+                    format.sgPrec = parseInt(elDom.dataset.sgPrec);
+                    format.decPrec = Math.ceil(Math.max(0, Math.log(60**format.sgPrec)/Math.log(10))); 
+                    format.timeSecPrec = Math.ceil(Math.max(0, Math.log(60**format.sgPrec/86400)/Math.log(10)));
+                }
+
+                if ("value" in elDom){
+                    elDom.value = output(value,format);
+                }else{
+                    elDom.textContent = output(value,format);
+                }
+                showTip(elDom,format);
+             }
+
+
+            /*Input classes */
+            function input(number,format){
+                number = String(number).trim();
+                switch(format){
+                    case "integer":
+                        return parseInt(number);
+                        break;
+                    case "time":
+                        return time(number);
+                        break;
+                    case "datetime":
+                        return datetime(number);
+                        break;
+                    case "date":
+                        return date(number);
+                        break;
+                    case "chord":
+                        if(options.base60chord){
+                            return(sgd(number/60));
+                        }else{
+                            return sgd(number);
+                        }
+                        break;
+                    case "angle":
+                        if(options.showZodiac){
+                            return sgd(calculateZodiacString(number));
+                        }else
+                        return sgd(number);
+                        break;
+                    case "number":
+                        return sgd(number);
+                        break;
+                    default:
+                        return number;
+                }
+            }
+
+            function getValue(el){
+                let elDom;
+
+                if(typeof el !== "object")
+                    elDom = document.querySelector(el);
+                else{
+                    elDom = el;
+                }
+
+                const format = elDom.dataset.type;
+
+                if("value"  in elDom){
+                    return input(elDom.value,format);
+                }else{
+                    return input(elDom.innerHTML,format);
+                }
+            }
+
+            function validateInput(text,type){
+                let validStr = "";
+                text = text.trim();
+                switch(type){
+                    case "integer":
+                        if(parseInt(text) !== parseFloat(text)){
+                            validStr = "Expecting Input to  be an Integer";
+                        }
+                    break;
+                    case "fraction":
+                      if(isNaN(frac(text))){
+                        validStr = "Expecting input to be a valid decimal number or fraction.";
+                      }
+                    break;
+                    case "number":
+                      if(isNaN(sgd(text))){
+                        validStr = "Expecting input to be a valid decimal or sexagesimal number or fraction.";
+                      }
+                    break;
+                    case "date":
+                      if(isNaN(date(text))){
+                        validStr = "Expecting input to be a valid date string in the format 123 Jun. 5";
+                      }
+                      break;
+                }
+
+                return validStr;
+             }
+
+             /*Storage*/
+
+             function saveValues(){
+                const sections = document.querySelectorAll("main section");
+
+                let data = {};
+                
+                for(section of sections){
+                    const id = section.id; 
+                    const els = section.querySelectorAll("input,span");
+
+                    for(el of els){
+                        const cls = el.classList;
+                        for(cl of cls){
+                            data["#"+id+" ."+cl] = getValue(el);;
+                        }
+                    }
+                }
+
+                localStorage.setItem("almagest-calc-all-values",JSON.stringify(data));
+             }
+
+             function loadValues(){
+                const data = JSON.parse(localStorage.getItem("almagest-calc-all-values"));
+
+                for(key in data){
+                    display(key, data[key]);
+                }
+
+             }
+
+            /*Settings*/
+
+            // Load settings
+            function loadSettings(){
+                document.getElementById("settings-option-base60").checked = options.base60chord;
+                document.getElementById("settings-option-sexagesimal").checked = options.displaySg;
+            }
+
+            // Save settings
+            function saveSettings(){
+                options.base60chord = document.getElementById("settings-option-base60").checked;
+                options.displaySg = document.getElementById("settings-option-sexagesimal").checked;
+            }
+
+            function main(){
+
+                // Choose a calculator
+                currentCalc();
+                window.addEventListener("hashchange", function(){
+                    currentCalc();
+                });
+
+                // Sexagesimal calculator
+                document.querySelector("#sexagesimal .decimal").addEventListener("change", function(e){
+                    document.querySelector("#sexagesimal .sexagesimal").value = dsg(e.currentTarget.value);
+                });
+                document.querySelector("#sexagesimal .sexagesimal").addEventListener("change", function(e){
+                    document.querySelector("#sexagesimal .decimal").value = round(sgd(e.currentTarget.value), options.decPrec);
+                });
+
+                // For calendar and dates
+                document.querySelector("#calendar .days").innerHTML = renderDays(30);
+                document.querySelector("#calendar .month").addEventListener("change", function(e){
+                    if(e.currentTarget.value != 13){
+                        document.querySelector("#calendar .days").innerHTML = renderDays(30);
+                    }else{
+                        document.querySelector("#calendar .days").innerHTML = renderDays(5);
+                    }
+                });
+                document.querySelector("#calendar .egyptian").addEventListener("change", function(e){
+                    const daysDom = document.querySelector("#calendar .days :checked");
+                    const monthDom = document.querySelector("#calendar .month");
+
+                    if(daysDom && monthDom){
+                        const month = Number(monthDom.value);
+                        const days = Number(daysDom.value);
+                    
+                        document.querySelector("#calendar .day").innerText = calculateDays(month,days);
+                    }
+
+                    document.querySelector("#calendar .epoch").dispatchEvent(new Event("change"));
+                });
+                document.querySelector("#calendar .epoch").addEventListener("change", function(e){
+                    const daysDom = document.querySelector("#calendar .days :checked");
+                    const monthDom = document.querySelector("#calendar .month");
+                    const yearsDom = document.querySelector("#calendar .years");
+                    const epochChoiceDom = document.querySelector("#calendar .epoch-choice");
+                    
+                    if(daysDom && monthDom){
+                        const month = Number(monthDom.value);
+                        const days = Number(daysDom.value);
+                        const years = Number(yearsDom.value);
+                        const epochChoice = epochChoiceDom.value;
+
+                        let epochDays = 0; //Default Feb 28, -1 Epoch
+                        let epochString = "Epoc";
+                        
+                        switch(epochChoice){
+                            case "Nabonassar":
+                                // Feb 26, -746
+                                epochDays = new JulianDate(-746,"Feb", 26).epochDays;
+                                epochString = "Nabo";
+                                break;
+                            case "Callipic-1":
+                                epochDays = new JulianDate(-329,"Jun",28).epochDays;
+                                epochString = "Cal-I";
+                                break;
+                            case "Callipic-2":
+                                epochDays = new JulianDate(-253,"Jun",28).epochDays;
+                                epochString = "Cal-II";
+                                break;
+                            case "Callipic-3":
+                                epochDays = new JulianDate(-177,"Jun",28).epochDays;
+                                epochString = "Cal-III";
+                                break;
+                            case "Dionysius":
+                                epochDays = new JulianDate(-284,"Jun",28).epochDays;
+                                epochString = "Dio";
+                                break;
+                            case "Alexander":
+                                epochDays = new JulianDate(-324,"Nov",11).epochDays;
+                                epochString = "Alex";
+                                break;
+                            case "Mardokempad":
+                               epochDays = new JulianDate(-720,"Feb",20).epochDays;
+                               epochString = "Mardo";
+                               break;
+                            case "Hadrian":
+                                epochDays = new JulianDate(116,"Jul",25).epochDays;
+                                epochString = "Hadr";
+                                break;
+                            default:
+                        }
+
+                        const daysFromEpoch = calculateEpochDays(month,days,years);
+                        const date = new JulianDate(daysFromEpoch + epochDays);
+
+                        
+                        // Calculate date in Julian calendar from a given epoch
+
+                        document.querySelector("#calendar .epoch-days").innerText = daysFromEpoch;
+                        document.querySelector("#calendar .date-julian").innerText = date.toString()
+                        document.querySelector("#calendar .date-egyptian").innerText = `${epochString} ${years} ${dRoman(month)} ${days} `;
+                    }
+                });
+
+                // Zodiac Signs Calculator
+                document.querySelectorAll("#zodiac .degree,.sign").forEach(input => {
+                    input.addEventListener("change", function(e){
+                        const degreesEl = document.querySelector("#zodiac .degree");
+                        const signsEl = document.querySelector("#zodiac .sign");
+
+                        const degrees = getValue(degreesEl);
+                        const sign = getValue(signsEl);
+                        
+                        const longitude = degrees + sign;
+
+                        display("#zodiac .longitude",longitude);
+                    });
+                });
+                document.querySelector("#zodiac .longitude").addEventListener("change", function(e){
+                    const degreesEl = document.querySelector("#zodiac .degree");
+                    const signsEl = document.querySelector("#zodiac .sign");
+                    const longEl = document.querySelector("#zodiac .longitude");
+
+                    const longitude = longEl.value;
+
+                    const sign = 30*Math.floor(Math.round(angle(longitude))/30);
+                    const degrees = mod(longitude,30);
+
+                    signsEl.value = sign;
+                    degreesEl.value = degrees;
+                });
+
+                //Chord calculator
+                document.querySelector("#chords .chord").addEventListener("change", function(e){
+                    const chord = getValue(e.currentTarget);
+                    display("#chords .arc",arc(chord));
+                    drawChord(arc(chord))
+                });
+                document.querySelector("#chords .arc").addEventListener("change", function(e){
+                    const arc = getValue(e.currentTarget);
+                    display("#chords .chord",crd(arc));
+                    drawChord(arc);
+                });
+                drawChord(0);
+
+                //Obliquity
+                document.querySelector("#obliquity form").addEventListener("change", function(e){
+                    const ws = getValue("#obliquity .ws");
+                    const ss = getValue("#obliquity .ss");
+
+                    if(ws && ss){
+                        display("#obliquity .solstice", Math.abs(ws - ss));
+                        display("#obliquity .obliquity", Math.abs((ws - ss)/2));
+                        display("#obliquity .equinox", Math.abs((ws + ss)/2));
+                        display("#obliquity .latitude", Math.abs(90 - (ws + ss)/2));
+                    }
+                });
+
+                // Declination
+                document.querySelector("#declination .longitude").addEventListener("change", function(e){
+                    const longitude = getValue(e.target);
+                    const obliquity = getValue("#declination .obliquity");
+
+                    const declination = calculateDeclination(longitude,obliquity);
+
+                    display("#declination .declination",declination);
+
+                });
+                document.querySelector("#declination .declination").addEventListener("change", function(e){
+                    const declination = getValue(e.target);
+                    const obliquity = getValue("#declination .obliquity");
+
+                    const longitude = calculateLongitudeFromDeclination(declination,obliquity);
+                    display("#declination .longitude", longitude);
+                });
+
+                //Right Ascension
+                document.querySelector("#right-ascension .declination").addEventListener("change", function(e){
+                    const dec = getValue(e.target);
+                    const obliquity = getValue("#right-ascension .obliquity");
+
+                    const ra = calculateRightAscensionFromDeclination(dec,obliquity);
+
+                    display("#right-ascension .ra", ra);
+
+                });
+                document.querySelector("#right-ascension .ra").addEventListener("change", function(e){
+                    const ra = getValue(e.target);
+                    const obliquity = getValue("#right-ascension .obliquity");
+
+                    const declination = calculateDeclinationFromRightAscension(ra,obliquity);
+                    display("#right-ascension .declination", declination);
+                });
+
+                //Rising Amplitude
+                document.querySelector("#rising-amplitude .day-length").addEventListener("change", function(e){
+                    const dayLength = getValue(e.target);
+                    const declination = getValue("#rising-amplitude .declination");
+
+                    const ra = calculateRisingAmplitude(dayLength,declination);
+                    display("#rising-amplitude .amplitude", ra);
+                });
+                document.querySelector("#rising-amplitude .declination").addEventListener("change", function(e){
+                    const declination = getValue(e.target);
+                    const dayLength = getValue("#rising-amplitude .day-length");
+
+                    const ra = calculateRisingAmplitude(dayLength,declination);
+                    display("#rising-amplitude .amplitude", ra);
+                });
+                document.querySelector("#rising-amplitude .amplitude").addEventListener("change", function(e){
+                    const declination = getValue("#rising-amplitude .declination");
+                    const ra = getValue(e.target);
+
+                    const dayLength = calculateLongestDayFromAmplitude(ra,declination);
+                    display("#rising-amplitude .day-length", dayLength);
+                });
+
+                // Terrestrial Latitude
+                document.querySelector("#terrestrial-latitude .longest-day").addEventListener("change", function(e){
+                    const longestDay = getValue(e.target);
+                    const obliquity = getValue("#terrestrial-latitude .obliquity");
+
+                    const latitude = calculateLatitudeFromLongestDay(longestDay,obliquity);
+                    display("#terrestrial-latitude .latitude", latitude);
+                });
+                document.querySelector("#terrestrial-latitude .latitude").addEventListener("change", function(e){
+                    const latitude = getValue(e.target); 
+                    const obliquity = getValue("#terrestrial-latitude .obliquity");
+                    const longestDay = calculateLongestDayFromLatitude(latitude,obliquity);
+                    
+                    display("#terrestrial-latitude .longest-day", longestDay);
+                });
+
+                // Shadow Lengths
+                document.querySelector("#shadow-length .latitude").addEventListener("change", function(e){
+                    const latitude = getValue(e.target);
+                    const declination = getValue("#shadow-length .declination");
+                    const obliquity = getValue("#shadow-length .obliquity");
+
+                    display("#shadow-length .length", calculateShadowLength(latitude,declination));
+                    display("#shadow-length .winter", calculateShadowLength(latitude,-obliquity));
+                    display("#shadow-length .equinox", calculateShadowLength(latitude,0));
+                    display("#shadow-length .summer", calculateShadowLength(latitude,+obliquity));
+                    display("#shadow-length .climata", determineClimateZone(calculateShadowLength(latitude,-obliquity),calculateShadowLength(latitude,obliquity)));
+                });
+                document.querySelector("#shadow-length .declination").addEventListener("change", function(e){
+                    const declination = getValue(e.target);
+                    const latitude = getValue("#shadow-length .latitude");
+                    const obliquity = getValue("#shadow-length .obliquity");
+
+                    display("#shadow-length .length", calculateShadowLength(latitude,declination));
+                });
+                document.querySelector("#shadow-length .length").addEventListener("change", function(e){
+                    const length = getValue(e.target);
+                    const declination = getValue("#shadow-length .declination");
+                    
+                    display("#shadow-length .latitude", calculateLatitudeFromShadow(length,declination));
+                });
+
+                // Oblique Ascensions
+                document.querySelectorAll("#oblique-ascension .ecliptic-longitude,.latitude").forEach(input => input.addEventListener("change", function(e){
+                    const eclipticLongitude = getValue("#oblique-ascension .ecliptic-longitude");
+                    const latitude = getValue("#oblique-ascension .latitude");
+                    const obliquity = getValue("#oblique-ascension .obliquity");
+
+                    const oa = calculateObliqueAscension(latitude,eclipticLongitude,obliquity);
+                    display("#oblique-ascension .oblique", oa);
+                }));
+                document.querySelectorAll("#oblique-ascension .oblique").forEach(input => input.addEventListener("change", function(e){
+                    const oa = getValue("#oblique-ascension .oblique");
+                    const latitude = getValue("#oblique-ascension .latitude");
+                    const obliquity = getValue("#oblique-ascension .obliquity");
+
+                    const calcOblique = (longitude) => calculateObliqueAscension(latitude,longitude,obliquity);
+
+                    const eclipticLongitude = inverse(calcOblique,oa);
+                    display("#oblique-ascension .ecliptic-longitude", eclipticLongitude);
+                }));
+
+                // Length of daytime and night
+                document.querySelectorAll("#day-night-length .ecliptic-longitude,.latitude").forEach(input => input.addEventListener("change", function(e){
+                    const eclipticLongitude = getValue("#day-night-length .ecliptic-longitude");
+                    const latitude = getValue("#day-night-length .latitude");
+                    const obliquity = getValue("#day-night-length .obliquity");
+
+                    const dayLength = calculateDaytimeLength(latitude,eclipticLongitude,obliquity);
+                    display("#day-night-length .daytime", dayLength);
+                    display("#day-night-length .nighttime", 1 - dayLength);
+                }));
+                document.querySelectorAll("#day-night-length .daytime,.nighttime").forEach(input => input.addEventListener("change", function(e){
+                    // Calculate night and daylength
+                    if(input.classList.contains("daytime")){
+                        display("#day-night-length .nighttime", 1- getValue(input));
+                    }
+                    if(input.classList.contains("nighttime")){
+                        display("#day-night-length .daytime", 1 - getValue(input));
+                    }
+
+                }));
+
+                // Conversion between hours
+                document.querySelectorAll("#day-night-length .hours").forEach(input => input.addEventListener("change", function(e){
+                    // Default to hours
+                    if(!isNaN(input.value)){
+                        input.value += "h";
+                    }
+
+                    // Use the longitude of the sun and observer latitude
+                    const eclipticLongitude = getValue("#day-night-length .ecliptic-longitude");
+                    const latitude = getValue("#day-night-length .latitude");
+                    const obliquity = getValue("#day-night-length .obliquity");
+
+                    // Calculate length of day and night
+                    const dayLength = calculateDaytimeLength(latitude,eclipticLongitude,obliquity);
+                    const nightLength = 1 - dayLength;
+
+                    const dayHour = dayLength/12;
+                    const nightHour = nightLength/12;
+                    const equalHour = 1/24;
+
+                    if(input.classList.contains("day-hours")){
+                        display("#day-night-length .night-hours", (dayHour/nightHour)*getValue(input));
+                        display("#day-night-length .equal-hours", (dayHour/equalHour)*getValue(input));
+                    }
+                    if(input.classList.contains("night-hours")){
+                        display("#day-night-length .day-hours", (nightHour/dayHour)*getValue(input));
+                        display("#day-night-length .equal-hours", (nightHour/equalHour)*getValue(input));
+                    }
+                    if(input.classList.contains("equal-hours")){
+                        display("#day-night-length .day-hours", (equalHour/dayHour)*getValue(input));
+                        display("#day-night-length .night-hours", (equalHour/nightHour)*getValue(input));
+                    }
+                    if(input.classList.contains("equal-time")){
+                        const equalTime = getValue(input);
+                        let timeLeft = equalTime;
+                        // Day begins at noon in the Almagest (PM to AM)
+                        const dayHoursPM = Math.min(dayLength/2, (dayHour/equalHour)*timeLeft);
+                        timeLeft -= timeLeft<0? 0 :( dayLength/2 - (dayHour/equalHour)*timeLeft);
+                        const nightHours = Math.min(nightLength, (nightHour/equalHour)*timeLeft);
+                        timeLeft -= timeLeft<0? 0 :( nightLength - (nightHour/equalHour)*timeLeft);
+                        const dayHoursAM = Math.min(dayLength/2, (dayHour/equalHour)*timeLeft);
+
+                        console.log(dayHoursPM,nightHours,dayHoursAM);
+
+                        const seasonalHours = calculateSeasonalTime(equalTime,latitude,eclipticLongitude,obliquity);
+                        display("#day-night-length .seasonal-time", seasonalHours);
+                    }
+                    if(input.classList.contains("seasonal-time")){
+                        const seasonalTime = getValue(input);
+                        const dayHoursPM = Math.min(6*equalHour, (equalHour/dayHour)*seasonalTime);
+                        const nightHours = Math.min(12*equalHour, (equalHour/nightHour)*seasonalTime - dayHoursPM);
+                        const dayHoursAM = Math.min(6*equalHour, (equalHour/dayHour)*seasonalTime - dayHoursPM - nightHours);
+
+                        const equalHours = calculateEqualTime(seasonalTime,latitude,eclipticLongitude,obliquity);
+                        display("#day-night-length .equal-time", equalHours);
+                    }
+                   
+                    // Calculate Horoscopes
+                    const equalTime = getValue("#day-night-length .equal-time");
+                    const ascendant =  calculateAscendant(equalTime,eclipticLongitude,latitude,obliquity);
+                    const midheaven = calculateMidheaven(equalTime,eclipticLongitude,obliquity);
+                    
+                    display("#day-night-length .ascendant", ascendant);
+                    display("#day-night-length .midheaven", midheaven);
+                }));
+                document.querySelectorAll("#day-night-length .horoscope").forEach(input => input.addEventListener("change", function(e){
+
+                    const longitude = getValue("#day-night-length .ecliptic-longitude");
+                    const obliquity = getValue("#day-night-length .obliquity");
+                    const latitude = getValue("#day-night-length .latitude");
+
+                    const dayLength = calculateDaytimeLength(latitude,longitude,obliquity);
+                    const nightLength = 1 - dayLength;
+                    const dayHour = dayLength/12;
+                    const nightHour = nightLength/12;
+                    const equalHour = 1/24;
+
+                    if(input.classList.contains("midheaven")){
+                        const midHeaven = getValue(input); 
+
+                        const sunRA = calculateObliqueAscension(0,longitude,obliquity);
+                        const midheavenRA = calculateObliqueAscension(0,midHeaven,obliquity);
+
+                        const timeDegrees = midheavenRA - sunRA;
+                        const equalTime = timeDegrees/360;
+
+                        const ascendant = calculateAscendant(equalTime,longitude,latitude,obliquity);
+
+                        const dayHoursPM = Math.min(dayLength/2, (dayHour/equalHour)*equalTime);
+                        const nightHours = Math.min(nightLength, (nightHour/equalHour)*equalTime - dayHoursPM);
+                        const dayHoursAM = Math.min(dayLength/2, (dayHour/equalHour)*equalTime - dayHoursPM - nightHours);
+                        const seasonalTime = dayHoursPM + nightHours + dayHoursAM;
+
+                        display("#day-night-length .equal-time", equalTime);
+                        display("#day-night-length .seasonal-time", seasonalTime);
+                        display("#day-night-length .ascendant", ascendant);
+                    }
+                    if(input.classList.contains("ascendant")){
+                        const ascendant = getValue(input); 
+
+                        const sunOA = calculateObliqueAscension(latitude,longitude,obliquity);
+                        const ascendantOA = calculateObliqueAscension(latitude,ascendant,obliquity);
+
+                        const timeDegrees = ascendantOA - sunOA;
+                        const equalTime = mod(timeDegrees/360 - 1/4,1);
+
+                        const midheaven = calculateMidheaven(equalTime,longitude,obliquity);
+
+                        const dayHoursPM = Math.min(dayLength/2, (dayHour/equalHour)*equalTime);
+                        const nightHours = Math.min(nightLength, (nightHour/equalHour)*equalTime - dayHoursPM);
+                        const dayHoursAM = Math.min(dayLength/2, (dayHour/equalHour)*equalTime - dayHoursPM - nightHours);
+                        const seasonalTime = dayHoursPM + nightHours + dayHoursAM;
+
+                        display("#day-night-length .equal-time", equalTime);
+                        display("#day-night-length .seasonal-time", seasonalTime);
+                        display("#day-night-length .midheaven", midheaven);
+                    }
+                }));
+
+                // Calculate Ecliptic Angles
+                document.querySelectorAll("#ecliptic-angles .time-location").forEach(input => input.addEventListener("change", function(e){
+                    // Default to hours
+                    if(!isNaN(document.querySelector("#ecliptic-angles .time").value)){
+                        document.querySelector("#ecliptic-angles .time").value+= "h";
+                    }
+
+                    const longitude = getValue("#ecliptic-angles .longitude");
+                    const latitude = getValue("#ecliptic-angles .latitude");
+                    const equalTime = getValue("#ecliptic-angles .time");
+                    const obliquity = getValue("#ecliptic-angles .obliquity");
+
+
+                    const midheaven = calculateMidheaven(equalTime,longitude,obliquity);
+                    const ascendant = calculateAscendant(equalTime,longitude,latitude,obliquity);
+                    const declination = calculateDeclination(midheaven,obliquity);
+
+                    const eastAngle = calculateEastAngle(latitude,longitude,equalTime,obliquity);
+                    const westAngle = calculateEastAngle(latitude,longitude,1-equalTime,obliquity);
+                    const zenithDistance = calculateZenithDistance(latitude,longitude,equalTime,obliquity);
+
+                    display("#ecliptic-angles .east-angle", eastAngle);
+                    display("#ecliptic-angles .west-angle", westAngle);
+                    display("#ecliptic-angles .zenith", zenithDistance);
+
+                }));
+
+                // Calculate Length of Tropical Year
+                document.querySelector("#year-length form").addEventListener("change", function(e){
+                    if(document.querySelector("#year-length form").checkValidity()  === false){
+                        return;
+                    }
+                    const t1 = getValue("#year-length .o1");
+                    const t2 = getValue("#year-length .o2");
+
+                    const yearLength = calculateYearLength(t2-t1,365.25); 
+                    display("#year-length .value",yearLength);
+                });
+
+                // Calculate sun's mean motion
+                document.querySelectorAll("#sun-mean-motion .time,.year-length").forEach(input => {input.addEventListener("change", function(e){
+                    const year = getValue("#sun-mean-motion .year-length");
+                    const t = getValue("#sun-mean-motion .time");
+
+                    if(!t && ! year) return;
+
+                    const m = calculateMeanMotion(t,year);
+                    const numRev = calculateNumberOfRevolutions(t,year);
+                    display("#sun-mean-motion .orbits",numRev);
+                    display("#sun-mean-motion .motion",m);
+                })});
+                document.querySelectorAll("#sun-mean-motion .orbits,.motion").forEach(input => {input.addEventListener("change", function(e){
+                    const m = getValue("#sun-mean-motion .motion");
+                    const numRev = getValue("#sun-mean-motion .orbits");
+                    const year = getValue("#sun-mean-motion .year-length");
+
+                    const t = calculateTimeFromRevolutions(numRev,m,year);
+                    display("#sun-mean-motion .time",t);
+                })});
+
+                // Calculate the sun's parameters (eccentricity and apogee)
+                document.querySelector("#sun-eccentricity .observations").style.display = "none";
+                document.querySelector("#sun-eccentricity .choice").addEventListener("change", function(e){
+                    const data = new FormData(e.currentTarget);
+                    const choice = data.get("choice");
+
+                    document.querySelectorAll("#sun-eccentricity .form-choice").forEach( form=> {
+                      form.style.display = "none";
+                    });
+
+                    if(choice == "seasons"){
+                        document.querySelector("#sun-eccentricity .seasons").style.display = "block";
+                    }else{
+                        document.querySelector("#sun-eccentricity .observations").style.display = "block";
+                    }
+                });
+                document.querySelectorAll("#sun-eccentricity .seasons input").forEach(input => {input.addEventListener("change", function(e){
+                    const length = getValue(e.target);
+                    const quadrant = getValue(e.target.dataset.quadrant);
+                    const yearLength = getValue("#sun-eccentricity .year-length");
+
+                    if(length == ""){
+                        // Clear the existing entries
+                        dataSunSeasonsLength.splice(0,dataSunSeasonsLength.length);
+                        return;
+                    }
+
+                    const season = {
+                        length,quadrant
+                    }
+
+                    dataSunSeasonsLength.push(season);
+
+                    let s1;
+                    let s2;
+
+                    if(dataSunSeasonsLength.length == 2){
+                        const season1 = dataSunSeasonsLength[0];
+                        const season2 = dataSunSeasonsLength[1];
+
+                        if(season1.quadrant < season2.quadrant){
+                            s1 = season1.length;
+                            s2 = season2.length;
+                        }else{
+                            s2 = season1.length;
+                            s1 = season2.length;
+                        }
+
+                        const qd = Math.abs(season1.quadrant - season2.quadrant);
+                        const qs = Math.min(season1.quadrant,season2.quadrant);
+
+                        // Only adjacent seasons can be used
+                        if(qd == 90){
+                            let params = calculateSunParameters(s1,s2,yearLength);
+
+                            const equation = calculateEquationOfAnomaly(90,params.eccentricity);
+                            display("#sun-eccentricity .apogee",angle(params.apogee));
+                            display("#sun-eccentricity .eccentricity",params.eccentricity); 
+                            display("#sun-eccentricity .greatest-equation",equation); 
+                        }
+
+                        console.log(s1,s2);
+
+                        // Clear the existing entries
+                        dataSunSeasonsLength.splice(0,dataSunSeasonsLength.length);
+
+                        return;
+
+                    }
+
+                })});
+
+                // Calculate the solar equation of anomaly
+                document.querySelector("#sun-anomaly .mean").addEventListener("change", function(e){
+                    const m = getValue(e.target); 
+                    const ecc = getValue("#sun-anomaly .eccentricity");
+
+                    const eq = calculateEquationOfAnomaly(m,ecc);
+
+                    display("#sun-anomaly .equation",eq);
+                });
+                document.querySelector("#sun-anomaly .equation").addEventListener("change", function(e){
+                    const eq = getValue(e.target); 
+                    const ecc = getValue("#sun-anomaly .eccentricity");
+
+                    const calcAnomaly = (q) => calculateEquationOfAnomaly(q,ecc);
+
+                    const m = inverse(calcAnomaly,eq);
+                    display("#sun-anomaly .mean",angle(m));
+                });
+
+                // Calculate the sun's posiition at epoch
+                document.querySelector("#sun-epoch .form-observe").addEventListener("change", function(e){
+                   const long = getValue("#sun-epoch .observe-type"); 
+                   const t = getValue("#sun-epoch .observe");
+
+                   const apogee = getValue("#sun-epoch .apogee");
+                   const ecc = getValue("#sun-epoch .eccentricity");
+                   const year = getValue("#sun-epoch .year-length");
+
+                   const epoch = getValue("#sun-epoch .epoch");
+
+                   const [meanAnomaly,meanLongitude] = calculateSunEpoch(t, apogee, ecc, year,long,epoch);
+
+                   display("#sun-epoch .mean-anomaly",meanAnomaly);
+                   display("#sun-epoch .mean-longitude",meanLongitude);
+                });
+
+                // Calculate sun's position
+                document.querySelector("#sun-position .time").addEventListener("change", function(e){
+                    const t = getValue(e.target);
+
+                    // Parameters
+                    const apogee = getValue("#sun-position .apogee");
+                    const eccentricity = getValue("#sun-position .eccentricity");
+                    const yearLength = getValue("#sun-position .year-length");
+
+                    const ma_epoch = getValue("#sun-position .mean-anomaly-epoch");
+                    const mlong_epoch = getValue("#sun-position .mean-longitude-epoch");
+
+                    const epoch = getValue("#sun-position .epoch");
+
+                    const position = calculateSunPosition(t,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch);
+                    const eq = calculateEquationOfAnomaly(position.meanAnomaly,eccentricity);
+
+                    drawSunPosition(apogee,position.meanAnomaly);
+
+                    display("#sun-position .longitude",position.longitude);
+                    display("#sun-position .mean-longitude",position.meanLongitude);
+                    display("#sun-position .mean-anomaly",position.meanAnomaly);
+                    display("#sun-position .true-anomaly",position.trueAnomaly);
+                    display("#sun-position .equation",eq);
+
+                });
+                document.querySelector("#sun-position .mean-longitude-epoch").addEventListener("change", function(e){
+                    const apogee = getValue("#sun-position .apogee");
+                    const meanLong = getValue(e.currentTarget);
+                    display("#sun-position .mean-anomaly-epoch",angle(meanLong - apogee ));
+                });
+                document.querySelector("#sun-position .mean-anomaly-epoch").addEventListener("change", function(e){
+                    const apogee = getValue("#sun-position .apogee");
+                    const meanAnom = getValue(e.currentTarget);
+                    display("#sun-position .mean-longitude-epoch",angle(meanAnom + apogee ));
+                });
+                document.querySelector("#sun-position .apogee").addEventListener("change", function(e){
+                    const meanLong = getValue("#sun-position .mean-longitude-epoch");
+                    const apogee = getValue(e.currentTarget);
+                    const maDom = document.querySelector("#sun-position .mean-anomaly-epoch");
+
+                    if(maDom.value != ""){
+                        display("#sun-position .mean-anomaly-epoch",meanLong - apogee);
+                    }
+                });
+                drawSunPosition(0,0);
+
+                // Calculate Equation of Time
+                document.querySelector("#equation-time form").addEventListener("change", function(e){
+                    const t1 = getValue("#equation-time .time1");
+                    const t2 = getValue("#equation-time .time2");
+
+                    // Parameters
+                    const apogee = getValue("#equation-time .apogee");
+                    const eccentricity = getValue("#equation-time .eccentricity");
+                    const yearLength = getValue("#equation-time .year-length");
+
+                    const ma_epoch = getValue("#equation-time .mean-anomaly-epoch");
+                    const mlong_epoch = getValue("#equation-time .mean-longitude-epoch");
+
+                    const epoch = getValue("#equation-time .epoch");
+                    const obliquity = getValue("#equation-time .obliquity");
+
+                    const eqTime = calculateEquationOfTime(t1,t2,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch,obliquity); 
+
+                    display("#equation-time .simple-interval",t2 - t1);
+                    display("#equation-time .equation-time",eqTime);
+                    display("#equation-time .accurate-interval",t2 - t1 + eqTime);
+                });
+                document.querySelector("#equation-time .mean-longitude-epoch").addEventListener("change", function(e){
+                    const apogee = getValue("#equation-time .apogee");
+                    const meanLong = getValue(e.currentTarget);
+                    display("#equation-time .mean-anomaly-epoch",angle(meanLong - apogee ));
+                });
+                document.querySelector("#equation-time .mean-anomaly-epoch").addEventListener("change", function(e){
+                    const apogee = getValue("#equation-time .apogee");
+                    const meanAnom = getValue(e.currentTarget);
+                    display("#equation-time .mean-longitude-epoch",angle(meanAnom + apogee ));
+                });
+                document.querySelector("#equation-time .apogee").addEventListener("change", function(e){
+                    const meanLong = getValue("#equation-time .mean-longitude-epoch");
+                    const apogee = getValue(e.currentTarget);
+                    const maDom = document.querySelector("#equation-time .mean-anomaly-epoch");
+
+                    if(maDom.value != ""){
+                        display("#equation-time .mean-anomaly-epoch",meanLong - apogee);
+                    }
+                });
+                
+
+                // Lunar Eclipse Periods
+                document.querySelector("#moon-period .eclipse-form").addEventListener("change", function(e){
+                    const year = getValue("#moon-period .year-length");
+                    const interval = getValue("#moon-period .interval-days");
+                    const months = getValue("#moon-period .synodic-months");
+
+                    // Ratios
+                    const anomalyRatio = getValue("#moon-period .anomaly-ratio");
+                    const draconicRatio = getValue("#moon-period .draconic-ratio");
+
+                    // Month Lengths
+                    const synodic = interval/months;
+                    const tropical = 1/(1/synodic + 1/year);
+                    const anomaly = synodic/anomalyRatio;
+                    const draconic = synodic/draconicRatio;
+
+                    // Mean Motions
+                    const sunOrbits = calculateNumberOfRevolutions(interval,year);
+                    const moonOrbits = calculateNumberOfRevolutions(interval,tropical);
+                    const meanMotion = calculateMeanMotion(interval,year);
+
+                    display("#moon-period .synodic-month",synodic);
+                    display("#moon-period .tropical-month",tropical);
+                    display("#moon-period .anomaly-month",anomaly);
+                    display("#moon-period .draconic-month",draconic);
+
+                    display("#moon-period .sun-orbits",sunOrbits);
+                    display("#moon-period .moon-orbits",moonOrbits);
+                    display("#moon-period .motion",meanMotion);
+                });
+                document.querySelector("#moon-period .mean-motion-form").addEventListener("change", function(e){
+                    const sunOrbits = getValue("#moon-period .sun-orbits");
+                    const moonOrbits = getValue("#moon-period .moon-orbits");
+                    const meanMotion = getValue("#moon-period .motion");
+                    const year = getValue("#moon-period .year-length");
+
+                    const interval = year*(sunOrbits + meanMotion/360);
+
+                    // Ratios
+                    const anomalyRatio = getValue("#moon-period .anomaly-ratio");
+                    const draconicRatio = getValue("#moon-period .draconic-ratio");
+
+                    // Month Lengths
+                    const synodic = interval/(moonOrbits - sunOrbits);
+                    const tropical = 1/(1/synodic + 1/year);
+                    const anomaly = synodic/anomalyRatio;
+                    const draconic = synodic/draconicRatio;
+
+                    display("#moon-period .synodic-month",synodic);
+                    display("#moon-period .tropical-month",tropical);
+                    display("#moon-period .anomaly-month",anomaly);
+                    display("#moon-period .draconic-month",draconic);
+                });
+
+                // Calculate the moon's mean or uniform motions
+                document.querySelector("#moon-mean-motion .time").addEventListener("change", function(e){
+                    const t = getValue(e.target);
+
+                    const tropical = getValue("#moon-mean-motion .tropical-month");
+                    const synodic = getValue("#moon-mean-motion .synodic-month");
+                    const anomaly = getValue("#moon-mean-motion .anomaly-month");
+                    const latitude = getValue("#moon-mean-motion .draconic-month");
+
+                    document.querySelector("#moon-mean-motion .tropical-orbits").value = calculateNumberOfRevolutions(t,tropical);
+                    display("#moon-mean-motion .tropical-motion",calculateMeanMotion(t,tropical));
+
+                    document.querySelector("#moon-mean-motion .synodic-orbits").value = calculateNumberOfRevolutions(t,synodic);
+                    display("#moon-mean-motion .synodic-motion",calculateMeanMotion(t,synodic));
+
+                    document.querySelector("#moon-mean-motion .anomaly-orbits").value = calculateNumberOfRevolutions(t,anomaly);
+                    display("#moon-mean-motion .anomaly-motion",calculateMeanMotion(t,anomaly));
+
+                    document.querySelector("#moon-mean-motion .draconic-orbits").value = calculateNumberOfRevolutions(t,latitude);
+                    display("#moon-mean-motion .draconic-motion",calculateMeanMotion(t,latitude));
+
+                });
+                // Calculate Lunar Apogee and Eccentricity
+                document.querySelector("#moon-epicycle .form-observe").addEventListener("change", function(e){
+                    // Times of each observation
+                    const t1 = getValue("#moon-epicycle .obv-1");
+                    const t2 = getValue("#moon-epicycle .obv-2");
+                    const t3 = getValue("#moon-epicycle .obv-3");
+
+                    // Month Length
+                    const anomalyMonth = getValue("#moon-epicycle .anomaly-month");
+                    const tropicalMonth = getValue("#moon-epicycle .tropical-month");
+
+                    // Parameters for the sun
+                    const apogee = getValue("#moon-epicycle .sun-apogee");
+                    const eccentricity = getValue("#moon-epicycle .sun-eccentricity");
+                    const yearLength = getValue("#moon-epicycle .year-length");
+
+                    const ma_epoch = getValue("#moon-epicycle .mean-anomaly-epoch");
+                    const mlong_epoch = getValue("#moon-epicycle .mean-longitude-epoch");
+
+                    const obliquity =  23.85 // TODO: Add obliquity
+
+                    const epoch = getValue("#moon-epicycle .epoch");
+
+                    // Equation of time
+                    const eqt1 = calculateEquationOfTime(t1,t2,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch,obliquity);
+                    const eqt2 = calculateEquationOfTime(t2,t3,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch,obliquity);
+
+                    //Position of the sun at each observation
+                    const s1 = calculateSunPosition(t1,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch).longitude;
+                    const s2 = calculateSunPosition(t2,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch).longitude;
+                    const s3 = calculateSunPosition(t3,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch).longitude;
+
+                    //Longitude of the moon at each observation
+                    const m1 = angle(s1 - 180);
+                    const m2 = angle(s2 - 180);
+                    const m3 = angle(s3 - 180);
+                    
+                    console.log("motion in anomaly from second to third:",output(calculateMeanMotion(t3 - t2,anomalyMonth)));
+
+                    //Mean Motion in anomaly
+                    const a1 = calculateMeanMotion(t2 - t1 + eqt1,anomalyMonth)
+                    const a2 = calculateMeanMotion(t3 - t2 + eqt2,anomalyMonth)
+
+                    // Mean Motion in Longitude
+                    const l1 = calculateMeanMotion(t2 - t1 + eqt1,tropicalMonth)
+                    const l2 = calculateMeanMotion(t3 - t2 + eqt2,tropicalMonth)
+
+                    console.log("Mean motions:", a1, l1, a2 ,l2);
+
+                    //Equation of anomaly
+                    const p1 = angle(m2 - m1) - l1;
+                    const p2 = angle(m3 - m2) - l2;
+
+                    console.log(dsg(a1),dsg(a2),dsg(p1),dsg(p2));
+
+                    const params = calculateEpicycleParameters(a1,a2,p1,p2);
+
+                    const equation = Math.abs(calculateEquationOfAnomaly(90,params.radius));
+
+                    const apogee2 = angle(m2 - params.ano);
+                    const m_long2 = angle(m2 + params.eq);
+
+                    display("#moon-epicycle .sun-1",s1);
+                    display("#moon-epicycle .sun-2",s2);
+                    display("#moon-epicycle .sun-3",s3);
+                    display("#moon-epicycle .moon-1",m1);
+                    display("#moon-epicycle .moon-2",m2);
+                    display("#moon-epicycle .moon-3",m3);
+
+                    display("#moon-epicycle .equation", params.eq);
+                    display("#moon-epicycle .apogee",angle(apogee2));
+                    display("#moon-epicycle .mean-long2",angle(m_long2));
+                    display("#moon-epicycle .mean-ano2",angle(params.ano));
+
+                    display("#moon-epicycle .eccentricity",params.radius); 
+                    display("#moon-epicycle .greatest-equation",equation); 
+                    
+                });
+                document.querySelector("#moon-epicycle .form-positions").addEventListener("change", function(e){
+                    const s1 = getValue("#moon-epicycle .sun-1");
+                    const s2 = getValue("#moon-epicycle .sun-2");
+                    const s3 = getValue("#moon-epicycle .sun-3");
+                    const m1 = getValue("#moon-epicycle .moon-1");
+                    const m2 = getValue("#moon-epicycle .moon-2");
+                    const m3 = getValue("#moon-epicycle .moon-3");
+                    
+                    // Times of each observation
+                    const t1 = getValue("#moon-epicycle .obv-1");
+                    const t2 = getValue("#moon-epicycle .obv-2");
+                    const t3 = getValue("#moon-epicycle .obv-3");
+
+                    // Month Length
+                    const anomalyMonth = getValue("#moon-epicycle .anomaly-month");
+                    const tropicalMonth = getValue("#moon-epicycle .tropical-month");
+
+                    // Parameters for the sun
+                    const apogee = getValue("#moon-epicycle .sun-apogee");
+                    const eccentricity = getValue("#moon-epicycle .sun-eccentricity");
+                    const yearLength = getValue("#moon-epicycle .year-length");
+
+                    const ma_epoch = getValue("#moon-epicycle .mean-anomaly-epoch");
+                    const mlong_epoch = getValue("#moon-epicycle .mean-longitude-epoch");
+
+                    const obliquity =  23.85 // TODO: Add obliquity
+
+                    const epoch = getValue("#moon-epicycle .epoch");
+
+                    // Equation of time
+                    const eqt1 = calculateEquationOfTime(t1,t2,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch,obliquity);
+                    const eqt2 = calculateEquationOfTime(t2,t3,apogee,eccentricity,yearLength,ma_epoch,mlong_epoch,epoch,obliquity);
+
+                    //Mean Motion in anomaly
+                    const a1 = calculateMeanMotion(t2 - t1 + eqt1,anomalyMonth)
+                    const a2 = calculateMeanMotion(t3 - t2 + eqt2,anomalyMonth)
+
+                    // Mean Motion in Longitude
+                    const l1 = calculateMeanMotion(t2 - t1 + eqt1,tropicalMonth)
+                    const l2 = calculateMeanMotion(t3 - t2 + eqt2,tropicalMonth)
+
+                    //Equation of anomaly
+                    const p1 = angle(m2 - m1) - l1;
+                    const p2 = angle(m3 - m2) - l2;
+
+                    console.log(dsg(a1),dsg(a2),dsg(p1),dsg(p2));
+
+                    const params = calculateEpicycleParameters(a1,a2,p1,p2);
+
+                    const equation = Math.abs(calculateEquationOfAnomaly(90,params.radius));
+
+                    const apogee2 = angle(m2 - params.ano);
+                    const m_long2 = angle(m2 + params.eq);
+
+                    display("#moon-epicycle .equation", params.eq);
+                    display("#moon-epicycle .apogee",angle(apogee2));
+                    display("#moon-epicycle .mean-long2",angle(m_long2));
+                    display("#moon-epicycle .mean-ano2",angle(params.ano));
+
+                    display("#moon-epicycle .eccentricity",params.radius); 
+                    display("#moon-epicycle .greatest-equation",equation); 
+
+                });
+                document.querySelectorAll("#moon-epicycle .form-positions input").forEach( input => {
+                     input.addEventListener("change", function(e){
+                        const value = getValue(input);
+                        if(input.classList.contains("sun-1")){
+                            display("#moon-epicycle .moon-1", angle(value - 180));
+                        }
+                        if(input.classList.contains("sun-2")){
+                            display("#moon-epicycle .moon-2", angle(value - 180));
+                        }
+                        if(input.classList.contains("sun-3")){
+                            display("#moon-epicycle .moon-3", angle(value - 180));
+                        }
+                        if(input.classList.contains("moon-1")){
+                            display("#moon-epicycle .sun-1", angle(value - 180));
+                        }
+                        if(input.classList.contains("moon-2")){
+                            display("#moon-epicycle .sun-2", angle(value - 180));
+                        }
+                        if(input.classList.contains("moon-3")){
+                            display("#moon-epicycle .sun-3", angle(value - 180));
+                        }
+                     });
+                });
+                document.querySelector("#moon-epicycle .mean-longitude-epoch").addEventListener("change", function(e){
+                    const apogee = getValue("#moon-epicycle .sun-apogee");
+                    const meanLong = getValue(e.currentTarget);
+                    display("#moon-epicycle .mean-anomaly-epoch",angle(meanLong - apogee ));
+                });
+                document.querySelector("#moon-epicycle .mean-anomaly-epoch").addEventListener("change", function(e){
+                    const apogee = getValue("#moon-epicycle .sun-apogee");
+                    const meanAnom = getValue(e.currentTarget);
+                    display("#moon-epicycle .mean-longitude-epoch",angle(meanAnom + apogee ));
+                });
+                document.querySelector("#moon-epicycle .sun-apogee").addEventListener("change", function(e){
+                    const meanLong = getValue("#moon-epicycle .mean-longitude-epoch");
+                    const apogee = getValue(e.currentTarget);
+                    const maDom = document.querySelector("#moon-epicycle .mean-anomaly-epoch");
+
+                    if(maDom.value != ""){
+                        display("#moon-epicycle .mean-anomaly-epoch",meanLong - apogee);
+                    }
+                });
+
+                // Correcting Lunar mean motions
+                document.querySelector("#moon-correct-motion .form-initial").addEventListener("change", function(e){
+                    const tropical = getValue("#moon-correct-motion .tropical-month");
+                    const synodic = getValue("#moon-correct-motion .synodic-month");
+                    const anomaly = getValue("#moon-correct-motion .anomaly-month");
+                    const year = getValue("#moon-correct-motion .year-length");
+
+                    const t1 = getValue("#moon-correct-motion .t1");
+                    const t2 = getValue("#moon-correct-motion .t2");
+                    const eq = getValue("#moon-correct-motion .eq");
+                    
+                    const long1 = getValue("#moon-correct-motion .long1");
+                    const long2 = getValue("#moon-correct-motion .long2");
+
+                    const ano1 = getValue("#moon-correct-motion .ano1");
+                    const ano2 = getValue("#moon-correct-motion .ano2");
+
+                    const t = t2 - t1 + eq;
+                    const m_ano = angle(ano2 - ano1);
+                    const m_long = angle(long2 - long1);
+
+                    //Correct mean motion (lunar periods)
+                    const tropicalCorrect = correctMeanMotion(tropical, t, m_long);
+                    const anomalyCorrect = correctMeanMotion(anomaly, t, m_ano);
+
+                    // Correcting the synodic month
+                    //const s_long = calculateMeanMotion(t,year);
+                    //const m_elong = angle(m_long - s_long);
+                    //const synodicCorrect = correctMeanMotion(synodic, t, m_elong);
+
+                    const synodicCorrect =  1/(1/tropicalCorrect - 1/year);
+
+                    display("#moon-correct-motion .correct-tropical-month", tropicalCorrect);
+                    display("#moon-correct-motion .correct-anomaly-month", anomalyCorrect);
+                    display("#moon-correct-motion .correct-synodic-month", synodicCorrect);
+
+                });
+                document.querySelector("#moon-correct-motion .tropical-month").addEventListener("change", function(e){
+                    const tropical = getValue(e.currentTarget);
+                    const year = getValue("#moon-correct-motion .year-length");
+
+                    if(year == 0) return;
+
+                    const synodic = 1/(1/tropical - 1/year);
+                    display("#moon-correct-motion .synodic-month",synodic);
+                });
+                document.querySelector("#moon-correct-motion .synodic-month").addEventListener("change", function(e){
+                    const synodic = getValue(e.currentTarget);
+                    const year = getValue("#moon-correct-motion .year-length");
+
+                    if(year == 0) return;
+
+                    const tropical = 1/(1/synodic + 1/year);
+                    display("#moon-correct-motion .tropical-month",tropical);
+                });
+                document.querySelector("#moon-correct-motion .year-length").addEventListener("change", function(e){
+                    const year = getValue(e.currentTarget);
+                    const tropical = getValue("#moon-correct-motion .tropical-month");
+
+                    if(tropical == 0) return;
+
+                    const synodic = 1/(1/tropical  - 1/year);
+                    display("#moon-correct-motion .synodic-month",synodic);
+
+                });
+
+                // Moon's position at epoch
+                document.querySelector("#moon-epoch .form-observe").addEventListener("change", function(e){
+                    const tropical = getValue("#moon-epoch .tropical-month");
+                    const anomaly = getValue("#moon-epoch .anomaly-month");
+
+                    const t1 = getValue("#moon-epoch .t");
+                    const epoch = getValue("#moon-epoch .epoch");
+                    const eq = getValue("#moon-epoch .eq");
+
+                    const long = getValue("#moon-epoch .long");
+                    const ano = getValue("#moon-epoch .ano");
+
+                    const sun_epoch = getValue("#moon-epoch .sun-epoch");
+          
+                    const t = t1 + eq;
+
+                    const long_epoch = calculateEpochPosition(t,long,tropical,epoch);
+                    const ano_epoch = calculateEpochPosition(t,ano,anomaly,epoch);
+                    const elong_epoch = angle(sun_epoch -  long_epoch); //TODO: Check this!
+
+                    display("#moon-epoch .long-epoch",long_epoch);
+                    display("#moon-epoch .ano-epoch",ano_epoch);
+                    display("#moon-epoch .elong-epoch",elong_epoch);
+
+                });
+
+                // Correcting draconic month and epoch
+                document.querySelector("#moon-draconic .form-observe").addEventListener("change", function(e){
+                    const t1 = getValue("#moon-draconic .t1");
+                    const t2 = getValue("#moon-draconic .t2");
+                    const eq = getValue("#moon-draconic .eq");
+                    
+                    const tropical = getValue("#moon-draconic .tropical-month");
+                    const anomaly = getValue("#moon-draconic .anomaly-month");
+                    const draconic = getValue("#moon-draconic .draconic-month");
+                    const radius = getValue("#moon-draconic .moon-radius");
+
+                    const epoch = getValue("#moon-draconic .epoch");
+                    const ma_epoch = getValue("#moon-draconic .ano-epoch");
+
+                    const ano1 = angle(ma_epoch + calculateMeanMotion(t1 - epoch +  eq,anomaly));
+                    const ano2 = angle(ma_epoch + calculateMeanMotion(t2 - epoch +  eq,anomaly));
+
+                    const p1 = calculateEquationOfAnomaly(ano1,radius);
+                    const p2 = calculateEquationOfAnomaly(ano2,radius);
+
+                    const mot = calculateMeanMotion(t2 - t1 + eq, draconic);
+
+                    const mot_lat =  angle(p1 - p2);
+
+                    const draconicCorrect = correctMeanMotion(draconic, t2 - t1 + eq, mot_lat);
+
+                    display("#moon-draconic .correct-draconic-month",draconicCorrect);
+
+                    console.log(dsg(p2), dsg(p1));
+
+                });
+
+                // Corecting the moon's latitude of epoch
+                document.querySelector("#moon-latitude-epoch .form-observe").addEventListener("change", function(e){
+                    const t1 = getValue("#moon-latitude-epoch .t1");
+                    const t2 = getValue("#moon-latitude-epoch .t2");
+                    const eq = getValue("#moon-latitude-epoch .eq");
+                    const epoch = getValue("#moon-latitude-epoch .epoch");
+
+                    const tropical = getValue("#moon-latitude-epoch .tropical-month");
+                    const anomaly = getValue("#moon-latitude-epoch .anomaly-month");
+                    const draconic = getValue("#moon-latitude-epoch .draconic-month");
+                    const radius = getValue("#moon-latitude-epoch .moon-radius");
+
+                    const node = getValue("#moon-latitude-epoch .node1") === "descending"? 90:270;
+                    const side = getValue("#moon-latitude-epoch .side") === "north"? +1:-1;
+
+                    const ma_epoch = getValue("#moon-latitude-epoch .ano-epoch");
+
+                    const ma1 = angle(ma_epoch + calculateMeanMotion(t1 - epoch,anomaly));
+                    const ma2 = angle(ma_epoch + calculateMeanMotion(t2 - epoch,anomaly));
+
+                    const p1 = calculateEquationOfAnomaly(ma1,radius);
+                    const p2 = calculateEquationOfAnomaly(ma2,radius);
+
+                    const mlat = calculateMeanMotion(t2 - t1 + eq,draconic);
+
+                    const ng = angle(180 - (mlat + p2 - p1))/2;
+
+                    const n1 = angle(node + (ng - p1)*side) 
+                    const n2 = angle(180 + node - (ng + p2)*side);
+
+                    const n_ep = angle(n1 - calculateMeanMotion(t1 - epoch,draconic));
+
+                    display("#moon-latitude-epoch .arg-lat", n_ep);
+
+                    console.log(dsg(n1),dsg(n2));
+                });
+                document.querySelector("#moon-latitude-epoch .node1").addEventListener("change", function(e){
+                    const value = getValue(e.currentTarget);
+
+                    if(value === "ascending"){
+                        display("#moon-latitude-epoch .node2","descending");
+                    }else{
+                        display("#moon-latitude-epoch .node2","ascending");
+                    }
+                });
+                document.querySelector("#moon-latitude-epoch .node2").addEventListener("change", function(e){
+                    const value = getValue(e.currentTarget);
+
+                    if(value === "ascending"){
+                        display("#moon-latitude-epoch .node1","descending");
+                    }else{
+                        display("#moon-latitude-epoch .node1","ascending");
+                    }
+                });
+
+                // Calculate the lunar first equation of anomaly
+                document.querySelector("#moon-anomaly .mean").addEventListener("change", function(e){
+                    const m = getValue(e.target); 
+                    const ecc = getValue("#moon-anomaly .eccentricity");
+
+                    const eq = calculateEquationOfAnomaly(m,ecc);
+
+                    display("#moon-anomaly .equation",eq);
+                });
+                document.querySelector("#moon-anomaly .equation").addEventListener("change", function(e){
+                    const eq = getValue(e.target); 
+                    const ecc = getValue("#moon-anomaly .eccentricity");
+
+                    const calcAnomaly = (q) => calculateEquationOfAnomaly(q,ecc);
+
+                    const m = inverse(calcAnomaly,eq);
+                    display("#moon-anomaly .mean",angle(m));
+                });
+
+                // Calculate lunar second anomaly from observations
+                document.querySelector("#moon-2nd-anomaly .form-observe").addEventListener("change", function(e){
+                    const moon = getValue("#moon-2nd-anomaly .moon-long");
+                    const sun = getValue("#moon-2nd-anomaly .sun-long");
+
+                    const moonMean = getValue("#moon-2nd-anomaly .moon-mean-long");
+                    const sunMean = getValue("#moon-2nd-anomaly .sun-mean-long");
+
+                    const f_ano = getValue("#moon-2nd-anomaly .first-anomaly");
+
+                    const m_elong = angle(moonMean - sunMean);
+                    const ano = moon - moonMean;
+                    const s_ano = ano - f_ano;
+
+                    display("#moon-2nd-anomaly .mean-elong",m_elong);
+                    display("#moon-2nd-anomaly .anomaly",ano);
+                    display("#moon-2nd-anomaly .second-anomaly",s_ano);
+            
+                });
+                document.querySelectorAll("#moon-2nd-anomaly .moon-long,.sun-long").forEach(input=>{
+                  input.addEventListener("change", function(e){
+                    const moon = getValue("#moon-2nd-anomaly .moon-long");
+                    const sun = getValue("#moon-2nd-anomaly .sun-long");
+
+                    const elong = angle(moon - sun);
+                    display("#moon-2nd-anomaly .elong",elong);
+                  })
+                });
+                document.querySelector("#moon-2nd-anomaly .elong").addEventListener("change", function(e){
+                    const sun = getValue("#moon-2nd-anomaly .sun-long");
+                    const elong = getValue("#moon-2nd-anomaly .elong");
+
+                    const moon = angle(sun + elong);
+                    display("#moon-2nd-anomaly .moon-long",moon);
+                });
+
+                // Moon's Eccentricity; Second Anomaly
+                document.querySelector("#moon-eccentricity .form-epicycle").addEventListener("change", function(e){
+                    const radius = getValue("#moon-eccentricity .radius");
+                    const f_ano = getValue("#moon-eccentricity .first-anomaly");
+                    const s_ano = getValue("#moon-eccentricity .second-anomaly");
+
+                    const ano = f_ano + s_ano;
+
+                    const ecc = (1 - radius/sin(ano))/2;
+
+                    display("#moon-eccentricity .anomaly",ano);
+                    display("#moon-eccentricity .eccentricity",ecc);
+
+                });
+                document.querySelector("#moon-eccentricity .radius").addEventListener("change", function(e){
+                    const radius = getValue("#moon-eccentricity .radius");
+                    const f_ano = calculateEquationOfAnomaly(270,radius);
+
+                    display("#moon-eccentricity .first-anomaly",f_ano);
+                });
+                document.querySelector("#moon-eccentricity .first-anomaly").addEventListener("change", function(e){
+                    const f_ano = getValue(e.currentTarget);
+                    const radius = inverseOld( (r) => calculateEquationOfAnomaly(270,r),f_ano);
+
+                    display("#moon-eccentricity .radius",radius);
+                });
+                document.querySelector("#moon-eccentricity .anomaly").addEventListener("change", function(e){
+                    const ano  =getValue(e.currentTarget);
+                    const f_ano = getValue("#moon-eccentricity .first-anomaly");
+
+                    const s_ano = ano - f_ano;
+                    display("#moon-eccentricity .second-anomaly",s_ano);
+                });
+
+                // Prevent default submissions
+                document.querySelectorAll("form").forEach(form => {
+                    form.addEventListener("submit", function(e){
+                        e.preventDefault();
+                        e.currentTarget.dispatchEvent(new Event("change"));
+                    });
+                    form.addEventListener("keydown", function(e){
+                        if(e.keyCode === 13){
+                            e.currentTarget.dispatchEvent(new Event("change"));
+                        }
+                    });
+                });
+
+                document.querySelector("main").addEventListener("mousedown", function(e){
+                    const sidebar = document.querySelector(".sidebar ul");
+                    sidebar.classList.remove("sidebar-visible");
+                });
+                document.querySelector("main").addEventListener("touchstop", function(e){
+                    const sidebar = document.querySelector(".sidebar ul");
+                    sidebar.classList.remove("sidebar-visible");
+                });
+
+                // Settings
+                document.querySelector("#settings form").addEventListener("change", function(e){
+                    saveSettings();
+                });
+                loadSettings();
+
+            }
+
+
+
+            function changeCalc(id){
+                const sections = document.querySelectorAll(".main section");
+
+                const sidebar = document.querySelector(".sidebar ul");
+                sidebar.classList.remove("sidebar-visible");
+
+                sections.forEach( section => {
+                    if(section.id === id){
+                        section.style.display = "block";
+                    }else{
+                        section.style.display = "none";
+                    }
+                });
+
+                document.querySelectorAll("input").forEach(input => {
+                    ["input","focus", "change","focusout"].forEach(event => {
+                        input.addEventListener(event, function(e){
+                            let ms = e.currentTarget.type == "number"?2:1;
+                            e.currentTarget.style.width = Math.max(4, this.value.length + ms ) + "ch";
+
+                            const validType = e.currentTarget.dataset.type || "";
+                            const validSubType = e.currentTarget.dataset.subtype || "";
+                            const validText  = validateInput(e.currentTarget.value,validType);
+                            if(event === "input"){
+                                e.currentTarget.setCustomValidity("");
+                            }
+                            if(event === "change" || event === "focusout"){
+                                // Validation
+
+                                e.currentTarget.title = validText;
+                                e.currentTarget.setCustomValidity(validText);
+                                e.currentTarget.reportValidity();
+
+                                if(validType === "angle" && validSubType === "zodiac"){
+                                    if(options.showZodiac){
+                                        if(e.currentTarget.willValidate)
+                                          e.currentTarget.title = findZodiacText(getValue(e.currentTarget)) + " - "  + getValue(e.currentTarget)  + "°";
+                                        e.currentTarget.value = convertToZodiac(getValue(e.currentTarget));
+                                    }
+                                }
+                                    return;
+                            }
+
+                            if(validType === "angle" && validSubType == "zodiac"){
+                                if(options.showZodiac){
+                                    e.currentTarget.value = replaceZodiacString(e.currentTarget.value);
+                                }else{
+                                    e.currentTarget.value = calculateZodiacString(e.currentTarget.value);
+                      //              e.currentTarget.value = replaceZodiacString(e.currentTarget.value);  
+                        //            e.currentTarget.value = calculateZodiacString(e.currentTarget.value);
+                                }
+                            }
+                        })
+                    })
+                });
+
+                setInterval( function inputLoop(){
+                    document.querySelectorAll("input").forEach(input => {
+                            let ms = input.type == "number"?2:1;
+                            input.style.width = Math.max(4, input.value.length + ms ) + "ch";
+                    });
+
+                    return inputLoop;
+                }(), 500);
+            }
+
+            function toggleSidebar(){
+                const sidebar = document.querySelector(".sidebar ul");
+                sidebar.classList.toggle("sidebar-visible");
+            }
+
+            // Determine current calculator by the url hash
+            function currentCalc(){
+                const id = window.location.hash.replace('#','');
+                changeCalc(id);
+            }
+
+            window.onload = main;
+
+        </script>
+</head>
+<body>
+    <nav class="sidebar">
+        <button onclick="toggleSidebar();"><img src="assets/toc.svg" alt="Content&gt;"></button>
+        <ul>
+          <li><a href="#sexagesimal">0.5a Sexagesimal</a></li>
+          <li><a href="#calendar">0.5d Calendar and Dates</a></li>
+          <li><a href="#zodiac">0.7 Zodiac Signs to Ecliptic Longitude</a></li>
+          <li><a href="#chords">1.11 Length of a chord (trigonometry)</a></li>
+          <li><a href="#obliquity">1.12 Obliquity of the ecliptic</a></li>
+          <li><a href="#declination">1.14 Declination of the sun</a></li>
+          <li><a href="#right-ascension">1.16 Right ascension from Declination</a></li>
+          <li><a href="#rising-amplitude">2.2 Rising Amplitude of the sun</a></li>
+          <li><a href="#terrestrial-latitude">2.3 Terrestrial Latitude from the Longest Day</a></li>
+          <li><a href="#shadow-length">2.5 Length of Shadows</a></li>
+          <li><a href="#oblique-ascension">2.7 Oblique Ascensions<a/></li>
+          <li><a href="#day-night-length">2.9 Length of night and daytime</a></li>
+          <li><a href="#ecliptic-angles">2.13 Ecliptic angles and Zenith Distance</a></li>
+          <li><a href="#year-length">3.1 Length of the tropical year</a></li>
+          <li><a href="#sun-mean-motion">3.2 Solar mean motion</a></li>
+          <li><a href="#sun-eccentricity">3.4 Solar apogee and eccentricity</a></li>
+          <li><a href="#sun-anomaly">3.6 Solar Anomaly</a></li>
+          <li><a href="#sun-epoch">3.7 Epoch of the sun</a></li>
+          <li><a href="#sun-position">3.8 Position of the sun</a></li>
+          <li><a href="#equation-time">3.9 Equation of Time</a></li>
+          <li><a href="#moon-period">4.2 Lunar periods</a></li>
+          <li><a href="#moon-mean-motion">4.4 Lunar mean motions</a></li>
+          <li><a href="#moon-epicycle">4.6 Lunar apogee and eccentricity</a></li>
+          <li><a href="#moon-correct-motion">4.7 Lunar corrected mean motions</a></li>
+          <li><a href="#moon-epoch">4.8 Epoch of the moon</a></li>
+          <li><a href="#moon-draconic">4.9a Corrected Draconic Mean Motion</a></li>
+          <li><a href="#moon-latitude-epoch">4.9b Epoch of the moon's latitude</a></li>
+          <li><a href="#moon-anomaly">4.10 Lunar First anomaly</a></li>
+          <li><a href="#moon-position">4.* Position of the moon</a></li>
+          <li><a href="#moon-2nd-anomaly">5.3 Lunar Second Anomaly</a></li>
+          <li><a href="#moon-eccentricity">5.4 Lunar Eccentricity</a></li>
+          <li><a href="#moon-direction">5.5 Direction of moon's mean apogee</a></li>
+
+          <li><a href="#settings">Settings</a></li>
+        </ul>
+    </nav>
+    <main class="main">
+        <section class="section a-0" id="sexagesimal">
+            <h2> Sexagesimal Calculator </h2>
+            <form>
+                <label>Decimal:</label>
+                <input type="text" class="decimal" data-type="fraction">
+                <br>
+                <label>Sexagesimal:</label>
+                <input type="text" class="sexagesimal" data-type="number">
+            </form>
+        </section>
+        <section id="calendar">
+            <h2> Egyptian Calendar </h2>
+            <label>Month:</label>
+            <form class="egyptian">
+            <select class="month">
+                <option value="1">I - Thoth</option>
+                <option value="2"> II - Phaophi </option>
+                <option value="3">III- Athyr</option>
+                <option value="4">IV- Choiak</option>
+                <option value="5">V- Tybi</option>
+                <option value="6">VI- Mechir</option>
+                <option value="7">VII- Phamenoth</option>
+                <option value="8">VIII - Pharmouthi</option>
+                <option value="9">IX - Pachon</option>
+                <option value="10">X - Payni</option>
+                <option value="11">XI- Epiphi</option>
+                <option value="12">XII - Mesore</option>
+                <option value="13">Epigominal</option>
+            </select>
+            <fieldset class="days">
+            </fieldset>
+            </form>
+            <p>
+            Day of the year: <span class="day"></span>
+            </p>
+            <details>
+            <summary>
+            Epoch
+            </summary>
+            <h2> Epoch calculation </h2>
+            <form class="epoch">
+                Epoch:
+                <select class="epoch-choice">
+                    <option value="Nabonassar">Nabonassar</option>
+                    <option value="Alexander">Death of Alexander</option>
+                    <option value="Callipic-1">1st Callipic Cycle</option>
+                    <option value="Callipic-2">2nd Callipic Cycle</option>
+                    <option value="Callipic-3">3rd Callipic Cycle</option>
+                    <option value="Dionysius">Dinoysius</option>
+                    <option value="Mardokempad">Mardokempad</option>
+                    <option value="Hadrian">Hadrian</option>
+                </select>
+                <br>
+                Years since epoch:
+                <input type="number" class="years" data-type="integer" value="1">
+                <br>
+                Days since epoch:
+                <span class="epoch-days"></span>
+                <br>
+                Date:
+                <span class="date-julian"></span>
+                <br>
+                Date in Egyptian:
+                <span class="date-egyptian"></span>
+            </form>
+            </details>
+
+        </section>
+
+        <section id="zodiac">
+            <h2> Zodiac to Ecliptic Longitude </h2>
+            <form>
+                <label>Zodiac Degrees:</label>
+                <input type="text" class="degree" data-type="number">
+                <select class="sign" data-type="number">
+                    <option value="0">♈️ - Aries</option>
+                    <option value="30">♉️ - Taurus</option>
+                    <option value="60">♊️ - Gemini</option>
+                    <option value="90">♋️ - Cancer</option>
+                    <option value="120">♌️ - Leo</option>
+                    <option value="150">♍️ - Virgo</option>
+                    <option value="180">♎️ - Libra</option>
+                    <option value="210">♏️ - Scorpius</option>
+                    <option value="240">♐️ - Sagittarius</option>
+                    <option value="270">♑️ - Capricornus</option>
+                    <option value="300">♒️ - Aquarius</option>
+                    <option value="330">♓️ - Pisces</option>
+                </select>
+                <br>
+                <label>Degrees Longitude:</label>
+                <input type="text" class="longitude" data-type="number">
+            </form>
+        </section>
+
+        <section id="chords">
+            <h2>Chords and Arcs </h2>
+            <ul class="explain">
+                <li>A line running through a circle is refered to as a <em>chord</em>. The part of the cirmcumfrence cut by this line is called the <em>arc</em></li>
+                <li>The chords of a few arcs can be found from Euclid's geometry.</li>
+                <li>Other arcs can be found by combining half-angle, and sum and difference formulas. The procedure which Ptolemy uses to find these formulas is called <em>Ptolemy's theorem</em></li>
+            </ul>
+            <label>Arc:</label>
+            <input type="text" class="arc" data-type="angle" data-subtype="zodiac">
+            <br>
+            <label>Chord:</label>
+            <input type="text" class="chord" data-type="chord">
+            <br>
+
+            <canvas class="diagram" height="200" width="200">
+            </canvas>
+
+        </section>
+
+        <section id="obliquity">
+        <h2>Obliquity of Ecliptic and Terrestrial Latitude</h2>
+        <p class="explain">
+            <ul>
+            <li>A ring is aligned to the line of the meridian, where the 
+            sun reaches its highest point in the sky (noon)</li> 
+            <li>Degree markings on this instrument allow us to  measure 
+            the elevation angle of the sun at noon. </li>
+            <li>Measure the highest elevation (summer solstice) 
+            and lowest elevation (winter solstice) of the sun, throughout
+            the year, for your location </li>
+            </ul>
+        </p>
+            <form>
+            <h4>Elevation Angles:</h4>
+            <label>Summer solstice:</label>
+            <input type="text" class="ss" data-type="angle">
+            <br>
+            <label>Winter solstice:</label>
+            <input type="text" class="ws" data-type="angle">
+            <br>
+            </form>
+            <br>
+
+            <label>Arc between solstices:</label>
+            <span class="solstice" data-type="angle"></span>
+            <br>
+
+            <label>Obliquity:</label>
+            <span class="obliquity" data-type="angle"></span>
+            <br>
+
+            <label>Equinox elevation:</label>
+            <span class="equinox" data-type="angle"></span>
+            <br>
+
+            <label>Latitude (pole elevation):</label>
+            <span class="latitude" data-type="angle"></span>
+            <br>
+            
+        </section>
+
+        <section id="declination">
+            <h2> Declination from Ecliptic longitude </h2>
+            <form>
+                <label>Ecliptic longitude:</label>
+                <input type="text" class="longitude" data-type="angle" data-subtype="zodiac">
+                <br>
+                <label>Declination:</label>
+                <input type="text" class="declination" data-type="angle">
+                <br>
+
+                <details>
+                 <summary>More</summary>
+                 <label>Obliquity:</label>
+                 <input type="text" class="obliquity" data-type="angle" value="23;51,20">
+                </details>
+            </form>
+        </section>
+        
+        <section id="right-ascension">
+        <h2>Right ascension</h2>
+        <form>
+        <label>Declination:</label>
+        <input type="text" class="declination" data-type="angle">
+        <br>
+        <label>Right ascension:</label>
+        <input type="text" class="ra" data-type="time-angle">
+        <br>
+
+        <details>
+            <summary>More</summary>
+            <label>Obliquity:</label>
+            <input type="text" class="obliquity" value="23;51,20" data-type="angle">
+        </details>
+        
+        </form>
+        
+        </section>
+
+        <section id="rising-amplitude">
+           <h2> Rising Amplitude of the sun </h2> 
+           <p>Determine the angle that the sun rises in relation to true east</p>
+           <p class="explain">We can measure the length of the day using a clock.</p>
+           <label>Length of the day:</label>
+           <input type="text" class="day-length" data-type="time">
+           <br>
+           <label>Declination of the sun:</label>
+           <input type="text" class="declination" data-type="angle">
+           <br>
+           <label>Rising Amplitude:</label>
+           <input type="text" class="amplitude" data-type="angle">
+           <br>
+        </section>
+
+        <section id="terrestrial-latitude">
+            <h2> Terrestrial Latitude from the Longest Day</h2>
+            <form>
+                <label>Length of Longest Day:</label>
+                <input type="text" class="longest-day" data-type="time">
+                <br>
+                <label> Latitude of the observer:</label>
+                <input type="text" class="latitude" data-type="angle">
+                <details>
+                    <summary>More</summary>
+                    <label>Obliquity:</label> 
+                    <input type="text" class="obliquity" value="23;51,20" data-type="angle">
+                </details>
+            </form>
+        </section>
+
+        <section id="shadow-length">
+            <h2> Length of Shadows at Noon </h2>
+            <p class="explain">A vertical rod placed in the ground is refered to a <em>gnomon</em>.</p>
+            <label>Terrestrial Latitude:</label>
+            <input type="text" class="latitude" data-type="angle">
+            <br>
+            <label>Declination:</label>
+            <input type="text" class="declination" data-type="angle">
+            <br>
+            <label>Length of shadow:</label>
+            <input type="text" class="length" data-type="chord">
+            <br>
+            <h3> Longest and Shortest Shadows </h3>
+
+            at Winter Solstice: <span class="winter" data-type="chord"></span><br>
+            at Summer Solstice: <span class="summer" data-type="chord"></span><br>
+            at Equinox: <span class="equinox" data-type="chord"></span><br>
+            Climate Zone: <span class="climata" data-type="text"></span>
+
+            <details>
+                <summary>More</summary>
+                <label>Obliquity</label>
+                <input type="text" class="obliquity" value="23;51,20" data-type="angle"><br>
+            </details>
+
+        </section>
+
+        <section id="oblique-ascension">
+            <h2> Oblique Ascension </h2>
+           <label>Sun's Ecliptic Longitude:</label>
+           <input type="text" class="ecliptic-longitude" data-type="angle" data-subtype="zodiac">
+           <br>
+           <label>Terrestrial Latitude:</label>
+           <input type="text" class="latitude" data-type="angle">
+           <br>
+           <label>Oblique Ascension:</label>
+           <input type="text" class="oblique" data-type="time-angle">
+           <br>
+            <details>
+                <summary>More</summary>
+                <label>Obliquity</label>
+                <input type="text" class="obliquity" value="23;51,20" data-type="angle"><br>
+            </details>
+        </section>
+        <section id="day-night-length">
+            <h2> Length of daytime and night hours </h2>
+           <label>Sun's Ecliptic Longitude:</label>
+           <input type="text" class="ecliptic-longitude" data-type="angle" data-subtype="zodiac">
+           <br>
+           <label>Terrestrial Latitude:</label>
+           <input type="text" class="latitude" data-type="angle">
+           <br>
+           <label>Length of daytime:</label>
+           <input type="text" class="daytime" data-type="time">
+           <br>
+           <label>Length of night:</label>
+           <input type="text" class="nighttime" data-type="time">
+           <br>
+
+           <h3>Conversion between different hour lengths</h3>
+           <label>Equal hours:</label>
+           <input type="text" class="equal-hours hours" data-type="time">
+           <br>
+           <label>Day hours:</label>
+           <input type="text" class="day-hours hours" data-type="time">
+           <br>
+           <label>Night hours:</label>
+           <input type="text" class="night-hours hours" data-type="time">
+           <br>
+
+           <h3>Time of Day and Horoscope</h3> 
+           <label>Equal hours:</label>
+           <input type="text" class="equal-time hours" data-type="time">
+           <br>
+           <label>Seasonal hours:</label>
+           <input type="text" class="seasonal-time hours" data-type="time">
+           <br>
+           <label>Longitude of Ascendant:</label>
+           <input type="text" class="ascendant horoscope" data-type="angle" data-subtype="zodiac">
+           <br>
+           <label>Longitude of Midheaven:</label>
+           <input type="text" class="midheaven horoscope" data-type="angle" data-subtype="zodiac">
+           
+            <details>
+                <summary>More</summary>
+                <label>Obliquity</label>
+                <input type="text" class="obliquity" value="23;51,20" data-type="angle"><br>
+            </details>
+        </section>
+
+        <section id="ecliptic-angles">
+            <h2> Ecliptic Angles and Zenith Distance </h2>
+
+            <form class="time-location">
+            <label>Ecliptic Longitude:</label>
+            <input type="text" class="longitude" data-type="angle" data-subtype="zodiac">
+            <br>
+            <label>Terrestrial Latitude:</label>
+            <input type="text" class="latitude" data-type="angle">
+            <br>
+            <label>Time of day (in equal hours):</label>
+            <input type="text" class="time" data-type="time">
+            <br>
+            </form>
+            <h3> Ecliptic Angles </h3>
+
+            <form class="ecliptic-angles">
+            <label>East Angle:</label>
+            <input type="text" class="east-angle" data-type="angle">
+            <br>
+            <label>West Angle:</label>
+            <input type="text" class="west-angle" data-type="angle">
+            <br>
+            <label>Zenith Distance:</label>
+            <input type="text" class="zenith" data-type="angle">
+            <br>
+            </form>
+
+            <details>
+                <summary>More</summary>
+                <label>Obliquity</label>
+                <input type="text" class="obliquity" value="23;51,20" data-type="angle"><br>
+            </details>
+        </section>
+        <section id="year-length">
+            <h2> Length of A Year </h2>
+            <p class="explain">Input two observations of the sun at equinox/solstice.
+            Both observations must be the same type of equinox/solstice. Use observations
+            as far apart as possible for maximum accuracy.</p>
+            
+            <form>
+                <label>Time of Observation 1:</label>
+                <input type="text" class="o1" data-type="datetime" required>
+                <br>
+                <label>Time of Observation 2:</label>
+                <input type="text" class="o2" data-type="datetime" required>
+                <br>
+                Length of Year:<span class="value" data-type="time"></span>
+            </form>
+        </section>
+        <section id="sun-mean-motion">
+            <h2> Sun's Mean or Uniform Motion</h2>
+            <label>Length of Year:</label>
+            <input type="text" class="year-length" data-type="time">
+            <br>
+            <label>Time:</label>
+            <input type="text" class="time" data-type="time">
+            <br>
+            <label>Number of Revolutions:</label>
+            <input type="number" class="orbits" data-type="integer">
+            <br>
+            <label>Mean Motion:</label>
+            <input type="text" class="motion" data-type="angle">
+            <br>
+        </section>
+        <section id="sun-eccentricity">
+            <h2> Sun's Apogee and Eccentricity from the Length of Seasons </h2>
+            <p>Determine From:</p>
+            <form class="choice">
+                <input type="radio" name="choice" class="choice" id="sun-seasons-choice-9904" value="seasons" checked>
+                <label for="sun-seasons-choice-9904">Length of Seasons</label>
+                <br>
+                <input type="radio" name="choice" class="choice" id="sun-seasons-choice-2368" value="observe">
+                <label for="sun-seasons-choice-2368">Equinox/Soltstice Observations</label>
+            </form>
+            <form class="form-choice seasons">
+            <p>From the Length of two seasons, determine the parameters for the sun</p>
+            <label>Spring:</label>
+            <input type="text" class="spring" data-quadrant="0" data-type="time">
+            <br>
+            <label>Summer:</label>
+            <input type="text" class="summer" data-quadrant="90" data-type="time">
+            <br>
+            <label>Autumn:</label>
+            <input type="text" class="autumn" data-quadrant="180" data-type="time">
+            <br>
+            <label>Winter:</label>
+            <input type="text" class="winter" data-quadrant="270" data-type="time">
+            <br>
+            </form>
+
+            <form class="form-choice observations">
+            <p> From the date and time of three observations of equinoxes/soltices, determine the parameters for the sun</p>
+            <label>Vernal Equinox:</label>
+            <input type="text" class="vernal-equinox" data-type="datetime">
+            <br>
+            <label>Summer Soltstice:</label>
+            <input type="text" class="summer-solstice" data-type="datetime">
+            <br>
+            <label>Autumnal Equinox:</label>
+            <input type="text" class="autumnal-equinox" data-type="datetime">
+            <br>
+            <label>Winter Solstice:</label>
+            <input type="text" class="winter-solstice" data-type="datetime">
+            <br>
+            </form>
+
+            <h3>Parameters</h3>
+            Longitude of Apogee:<span class="apogee" data-type="angle"></span><br>
+            Eccentricity:<span class="eccentricity" data-type="chord"></span><br>
+            Greatest Equation of Anomaly:<span class="greatest-equation" data-type="angle"></span><br>
+            <details>
+                <summary>More</summary>
+                <label>Length of Year:</label>
+                <input type="text" class="year-length" value="365;14,48d" data-type="time">
+                <br>
+            </details>
+        </section>
+
+        <section  id="sun-anomaly">
+            <h2> Sun's Equation of Anomaly</h2>
+            <label>Mean Anomaly:</label>
+            <input type="text" class="mean" data-type="angle">
+            <br>
+            <label>Equation of Anomaly:</label>
+            <input type="text" class="equation" data-type="angle">
+            <br>
+            <label>Eccentricity:</label>
+            <input type="text" class="eccentricity" data-type="chord">
+            <br>
+        </section>
+        <section  id="sun-epoch">
+            <h2>Sun's Mean Longitude and Anomaly at Epoch </h2>
+            <p>Determine from the time of a given observation of the sun:</p>
+            <form class="form-observe">
+            <label>Type of Observation:</label>
+            <select class="observe-type">
+                <option value="0">Vernal Equinox</option>
+                <option value="180">Autumnal Equinox</option>
+                <option value="90">Summer Solstice</option>
+                <option value="270">Winter Solstice</option>
+            </select>
+            <br>
+            <label>Date &amp; Time of observation:</label>
+            <input type="text" class="observe" data-type="datetime">
+            <br>
+            Mean Longitude: <span class="mean-longitude" data-type="angle" data-subtype="zodiac"></span><br>
+            Mean Anomaly: <span class="mean-anomaly" data-type="angle"></span><br>
+            <details>
+              <summary>Parameters</summary>
+              <h3> Parameters </h3>
+              <label>Longitude of Apogee:</label>
+              <input type="text" class="apogee" data-type="angle" data-subtype="zodiac">
+              <br>
+              <label>Eccentricity:</label>
+              <input type="text" class="eccentricity" data-type="chord">
+              <br>
+              <label>Length of Year:</label>
+              <input type="text" class="year-length" value="365;14,48d" data-type="time">
+              <br>
+
+              <h3> Epoch </h3>
+              <input type="checkbox" class="default-epoch" id="sun-epoch-default-90908767" checked>
+              <label for="sun-epoch-default-90908767">Choose default Nabonassar Epoch</label>
+              <br>
+
+              <label>Epoch:</label>
+              <input type="text" class="epoch" value="-746 Feb. 26" data-type="datetime">
+
+            </details>
+            </form>
+        </section>
+
+        <section id="sun-position">
+            <h2> Sun Position Calculator </h2>
+              <p> Determine the position of the sun at any given date and time. </p>
+              <label>Date and Time:</label>
+              <input type="text" class="time" data-type="datetime">
+              <br>
+
+              <canvas class="diagram" height="200px" width="200px"></canvas> <br>
+
+              Longitude: <span class="longitude" data-type="angle" data-subtype="zodiac"></span><br>
+              Mean Longitude:<span class="mean-longitude" data-type="angle" data-subtype="zodiac"></span><br>
+              Mean Anomaly: <span class="mean-anomaly" data-type="angle"></span><br>
+              True Anomaly: <span class="true-anomaly" data-type="angle"></span><br>
+              Equation of Anomaly:<span class="equation" data-type="angle"></span><br>
+            <details>
+              <summary>Parameters</summary>
+              <h3> Parameters </h3>
+              <label>Eccentricity:</label>
+              <input type="text" class="eccentricity" data-type="chord">
+              <br>
+              <label>Length of Year:</label>
+              <input type="text" class="year-length" data-type="time">
+              <br>
+              <h4> Position at Epoch </h4>
+              <label>Longitude of Apogee:</label>
+              <input type="text" class="apogee" data-type="angle" data-subtype="zodiac">
+              <br>
+              <label>Mean Longitude:</label>
+              <input type="text" class="mean-longitude-epoch" data-type="angle" data-subtype="zodiac">
+              <br>
+              <label>Mean Anomaly:</label>
+              <input type="text" class="mean-anomaly-epoch" data-type="angle">
+
+              <h4> Epoch </h4>
+              <input type="checkbox" class="default-epoch" id="sun-position-epoch-default-9788345" checked>
+              <label for="sun-position-epoch-default-9788345">Choose default Nabonassar Epoch</label>
+              <br>
+
+              <label>Epoch:</label>
+              <input type="text" class="epoch" value="-746 Feb. 26" data-type="datetime">
+            </details>
+        </section>
+        <section id="equation-time">
+            <h2> Equation of Time </h2>
+           <p class="explain">
+           For a given interval of two observations in true solar time, 
+           calculate the corresponding interval in mean solar time. The 
+           difference is the equation of time.
+           </p>
+
+           <form>
+           <label>Date/Time 1:</label>
+           <input type="text" class="time1" data-type="datetime">
+           <br>
+           <label>Date/Time 2:</label>
+           <input type="text" class="time2" data-type="datetime">
+           <br>
+           </form>
+
+           Interval (reckoned simply):<span class="simple-interval" data-type="time"></span><br>
+           Equation of time:<span class="equation-time" data-type="time"></span><br>
+           Interval (reckoned accurately):<span class="accurate-interval" data-type="time"></span><br>
+           <br>
+           <details>
+              <summary>Parameters</summary>
+              <h3> Sun Parameters </h3>
+              <label>Eccentricity:</label>
+              <input type="text" class="eccentricity" data-type="chord">
+              <br>
+              <label>Length of Year:</label>
+              <input type="text" class="year-length" data-type="time">
+              <br>
+            <label>Obliquity</label>
+            <input type="text" class="obliquity" value="23;51,20" data-type="angle"><br>
+              <h4> Position at Epoch </h4>
+              <label>Longitude of Apogee:</label>
+              <input type="text" class="apogee" data-type="angle" data-subtype="zodiac">
+              <br>
+              <label>Mean Longitude:</label>
+              <input type="text" class="mean-longitude-epoch" data-type="angle" data-subtype="zodica">
+              <br>
+              <label>Mean Anomaly:</label>
+              <input type="text" class="mean-anomaly-epoch" data-type="angle">
+
+              <h4> Epoch </h4>
+              <input type="checkbox" class="default-epoch" id="sun-position-epoch-default-9788345" checked>
+              <label for="sun-position-epoch-default-9788345">Choose default Nabonassar Epoch</label>
+              <br>
+
+              <label>Epoch:</label>
+              <input type="text" class="epoch" value="-746 Feb. 26" data-type="datetime">
+            </details>
+
+        </section>
+        <section id="moon-period">
+            <h2> Lunar Eclipse Periods </h2>
+
+            <h3>  Length of the Synodic Month from Eclipse Periods</h3>
+            <form class="eclipse-form">
+            <label>Length of the Year: </label>
+            <input type="text" class="year-length" data-type="time">
+            <br>
+            <label>Length of Time Interval:</label>
+            <input type="text" class="interval-days" data-type="time">
+            <br>
+            <label>Number of Synodic Months:</label>
+            <input type="number" class="synodic-months" data-type="integer">
+            <br>
+            </form>
+            <h4> Mean Motions </h4>
+            <form class="mean-motion-form">
+            <label>Number of Revolutions of the sun:</label>
+            <input type="number" class="sun-orbits" data-type="integer">
+            <br>
+            <label>Number of Revolutions of the moon:</label>
+            <input type="number" class="moon-orbits" data-type="integer">
+            <br>
+            <label>Mean Motion:</label>
+            <input type="text" class="motion" data-type="angle">
+            <br>
+            </form>
+            <h4> Ratio of Months </h4>
+            <label>Ratio of anomalistic to synodic month</label>
+            <input type="text" class="anomaly-ratio" value="269/251" data-type="number">
+            <br>
+            <label>Ratio of draconic to synodic month</label>
+            <input type="text" class="draconic-ratio" value="5923/5458" data-type="number">
+            <br>
+            <h3> Month Lengths </h3>
+            <label>Synodic Month:</label>
+            <input type="text" class="synodic-month" data-type="time" data-sg-prec="6">
+            <br>
+            <label>Tropical Month:</label>
+            <input type="text" class="tropical-month" data-type="time" data-sg-prec="6">
+            <br>
+            <label>Anomalistic Month:</label>
+            <input type="text" class="anomaly-month" data-type="time" data-sg-prec="6">
+            <br>
+            <label>Draconic Month:</label>
+            <input type="text" class="draconic-month" data-type="time" data-sg-prec="6">
+            <br>
+
+        </section>
+        <section id="moon-mean-motion">
+            <h2> Moon's Mean Motions </h2>
+            <p> Mean and Uniform motions of the moon </p>
+
+            <h3> Month Lengths </h3>
+            <label>Tropical Month:</label>
+            <input type="text" class="tropical-month" data-type="time">
+            <br>
+            <label>Synodic Month:</label>
+            <input type="text" class="synodic-month" data-type="time">
+            <br>
+            <label>Anomalistic Month:</label>
+            <input type="text" class="anomaly-month" data-type="time">
+            <br>
+            <label>Draconic Month:</label>
+            <input type="text" class="draconic-month" data-type="time">
+            <br>
+            <h3> Mean and Uniform Motions </h3>
+            <label>Time:</label>
+            <input type="text" class="time" data-type="time">
+            <br><br>
+            <label>Number of Tropical Months :</label>
+            <input type="number" class="tropical-orbits" data-type="integer">
+            <br>
+            <label>Mean Motion in longitude:</label>
+            <input type="text" class="tropical-motion" data-type="angle">
+            <br><br>
+            <label>Number of Synodic Months :</label>
+            <input type="number" class="synodic-orbits" data-type="integer">
+            <br>
+            <label>Mean Motion in elongation:</label>
+            <input type="text" class="synodic-motion" data-type="angle">
+            <br><br>
+            <label>Number of Anomalistic Months :</label>
+            <input type="number" class="anomaly-orbits" data-type="integer">
+            <br>
+            <label>Mean Motion in anomaly:</label>
+            <input type="text" class="anomaly-motion" data-type="angle">
+            <br><br>
+            <label>Number of Draconic Months :</label>
+            <input type="number" class="draconic-orbits" data-type="integer">
+            <br>
+            <label>Mean Motion in latitude:</label>
+            <input type="text" class="draconic-motion" data-type="angle">
+            <br><br>
+
+        </section>
+        <section id="moon-epicycle">
+            <h2> Moon's Apogee and Epicycle Radius From Three Observations </h2>
+
+            <h3> Date and Time of observations </h3>
+            <form class="form-observe">
+            <label>Observation 1: </label>
+            <input type="text" class="obv-1" data-type="datetime">
+            <br>
+            <label>Observation 2: </label>
+            <input type="text" class="obv-2" data-type="datetime">
+            <br>
+            <label>Observation 3: </label>
+            <input type="text" class="obv-3" data-type="datetime">
+            <br>
+            <input type="checkbox" class="eq-time" id="eqtime-79897564" checked>
+            <label for="eqtime-79897564">Equation of Time</label>
+            </form>
+
+            <h3> Ecliptic Longitude of the Moon and Sun at each eclipse observation</h3>
+            <p><b>First observation:</b></p>
+            <form class="form-positions">
+            <label>Sun:</label>
+            <input class="sun-1" data-type="angle" data-subtype="zodiac"><br>
+            <label>Moon:</label>
+            <input class="moon-1" data-type="angle" data-subtype="zodiac"><br>
+            <p><b>Second observation:</b></p>
+            <label>Sun:</label>
+            <input class="sun-2" data-type="angle" data-subtype="zodiac"><br>
+            <label>Moon:</label>
+            <input class="moon-2" data-type="angle" data-subtype="zodiac"><br>
+            <p><b>Third observation:</b></p>
+            <label>Sun:</label>
+            <input class="sun-3" data-type="angle" data-subtype="zodiac"><br>
+            <label>Moon:</label>
+            <input class="moon-3" data-type="angle" data-subtype="zodiac"><br><br>
+            </form>
+            <b> Position of the moon at second observation: </b><br>
+            Longitude of Apogee:<span class="apogee" data-type="angle" data-subtype="zodiac"></span>  <br>
+            Equation of Anomaly:<span class="equation" data-type="angle"></span> <br>
+            Mean Longitude:<span class="mean-long2" data-type="angle" data-subtype="zodiac"></span>  <br>
+            Mean Anomaly:<span class="mean-ano2" data-type="angle"></span> <br>
+            <br> 
+
+            <br>
+            Radius of Epicycle:<span class="eccentricity" data-type="chord"></span><br>
+            Greatest Equation of Anomaly:<span class="greatest-equation" data-type="angle"></span><br><br>
+            <details>
+              <summary>Parameters</summary>
+              <h3> Month Lengths </h3>
+              <label>Anomalistic Month:</label>
+              <input type="text" class="anomaly-month" data-type="time">
+              <br>
+              <label>Tropical Month:</label>
+              <input type="text" class="tropical-month" data-type="time">
+              <br>
+              <h3> Parameters for the sun </h3>
+              <label>Eccentricity:</label>
+              <input type="text" class="sun-eccentricity" data-type="chord">
+              <br>
+              <label>Length of Year:</label>
+              <input type="text" class="year-length" data-type="time">
+              <br>
+              <h4> Position at Epoch </h4>
+              <label>Longitude of Apogee:</label>
+              <input type="text" class="sun-apogee" data-type="angle" data-subtype="zodiac">
+              <br>
+              <label>Mean Longitude:</label>
+              <input type="text" class="mean-longitude-epoch" data-type="angle" data-subtype="zodiac">
+              <br>
+              <label>Mean Anomaly:</label>
+              <input type="text" class="mean-anomaly-epoch" data-type="angle">
+
+              <h4> Epoch </h4>
+              <input type="checkbox" class="default-epoch" id="sun-position-epoch-default-9788345" checked>
+              <label for="sun-position-epoch-default-9788345">Choose default Nabonassar Epoch</label>
+              <br>
+
+              <label>Epoch:</label>
+              <input type="text" class="epoch" value="-746 Feb. 26" data-type="datetime">
+            </details>
+        </section>
+
+        <section id="moon-correct-motion">
+            <h2> Correcting the Moon's Mean Motion in Longitude and Anomaly </h2>
+
+            <p class="explain">From two observations<p>
+
+            <h3> Initial Month Lengths </h3>
+            <form class="form-initial">
+            <label>Tropical Month:</label>
+            <input type="text" class="tropical-month" data-type="time" data-sg-prec="6">
+            <br>
+            <label>Synodic Month:</label>
+            <input type="text" class="synodic-month" data-type="time" data-sg-prec="6">
+            <br>
+            <label>Anomalistic Month:</label>
+            <input type="text" class="anomaly-month" data-type="time" data-sg-prec="6">
+            <br><br>
+            <label>Length of Tropical Year:</label>
+            <input type="text" class="year-length" data-type="time">
+            <br><br>
+            </form>
+
+            <h3> Corrected Month Lengths </h3>
+            <label>Tropical Month:</label>
+            <input type="text" class="correct-tropical-month" data-type="time" data-sg-prec="6">
+            <br>
+            <label>Synodic Month:</label>
+            <input type="text" class="correct-synodic-month" data-type="time" data-sg-prec="6">
+            <br>
+            <label>Anomalistic Month:</label>
+            <input type="text" class="correct-anomaly-month" data-type="time" data-sg-prec="6">
+            <br><br>
+
+            <h3></h3>
+            <b>Observation 1</b><br>
+              <label> Date/Time:</label>
+              <input type="text" class="t1" data-type="datetime"><br>
+              <label> Mean Longitude: </label>
+              <input type="text" class="long1" data-type="angle" data-subtype="zodiac"><br>
+              <label> Mean anomaly: </label>
+              <input type="text" class="ano1" data-type="angle"><br><br>
+
+
+            <b>Observation 2</b><br>
+              <label> Date/Time:</label>
+              <input type="text" class="t2" data-type="datetime"><br>
+              <label> Mean Longitude: </label>
+              <input type="text" class="long2" data-type="angle" data-subtype="zodiac"><br>
+              <label> Mean anomaly: </label>
+              <input type="text" class="ano2" data-type="angle"><br><br>
+              <label> Equation of Time: </label>
+              <input type="text" class="eq" data-type="time"><br><br>
+              
+        </section>
+
+        <section id="moon-epoch">
+            <h1> Moon's Mean Longitude and Anomaly at Epoch </h1>
+            <h3> Month Lengths </h3>
+            <form class="form-month">
+            <label>Tropical Month:</label>
+            <input type="text" class="tropical-month" data-type="time" data-sg-prec="6">
+            <br>
+            <label>Anomalistic Month:</label>
+            <input type="text" class="anomaly-month" data-type="time" data-sg-prec="6">
+            <br><br>
+            </form>
+            <h3>Observation</h3>
+            <form class="form-observe">
+              <label> Date/Time:</label>
+              <input type="text" class="t" data-type="datetime"><br>
+              <label> Mean Longitude: </label>
+              <input type="text" class="long" data-type="angle" data-subtype="zodiac"><br>
+              <label> Mean anomaly: </label>
+              <input type="text" class="ano" data-type="angle"><br><br>
+              <label> Equation of Time: </label>
+              <input type="text" class="eq" data-type="time"><br><br>
+              </form>
+
+              <h3> Epoch </h3>
+              <label> Mean Longitude of sun at Epoch: </label>
+              <input type="text" class="sun-epoch" data-type="angle" data-subtype="zodiac"><br><br>
+              <input type="checkbox" class="default-epoch" id="moon-epoch-default-926292682" checked>
+              <label for="moon-epoch-default-926292682">Choose default Nabonassar Epoch</label>
+              <br>
+              <label>Epoch:</label>
+              <input type="text" class="epoch" value="-746 Feb. 26" data-type="datetime">
+
+              <h3> Moon Position at Epoch </h3> 
+              <label>Mean Longitude:</label>
+              <span class="long-epoch" data-type="angle" data-subtype="zodiac"></span>
+              <br>
+              <label>Mean Anomaly:</label>
+              <span class="ano-epoch" data-type="angle"></span>
+              <br>
+              <label>Elongation:</label>
+              <span class="elong-epoch" data-type="angle"></span>
+              <br>
+
+              
+        </section>
+
+        <section id="moon-draconic">
+            <h2> Correcting the Moon's Mean Motion in Latitude</h2>
+            <p class="explain">Find two eclipses with the same magnitude, that occured near the same node, on the same side, and with the moon approximately the same distance from the Earth.</p>
+            
+            <form class="form-observe">
+            <label>Observation 1:</label>
+            <input type="text" class="t1" data-type="datetime"><br>
+            <br>
+            <label>Observation 2:</label>
+            <input type="text" class="t2" data-type="datetime"><br>
+            <br>
+            <label> Equation of Time: </label>
+            <input type="text" class="eq" data-type="time"><br><br>
+            </form>
+
+            <label>Initial Draconic Month:</label>
+            <input type="text" class="draconic-month" data-type="time" data-sg-prec="6">
+            <br>
+            <label>Corrected Draconic Month:</label>
+            <span type="text" class="correct-draconic-month" data-type="time" data-sg-prec="6"></span>
+            <br><br>
+
+            <details>
+                <summary>Parameters</summary>
+                <h3> Month Parameters </h3>
+                <label>Tropical Month:</label>
+                <input type="text" class="tropical-month" data-type="time" data-sg-prec="6">
+                <br>
+                <label>Anomalistic Month:</label>
+                <input type="text" class="anomaly-month" data-type="time" data-sg-prec="6">
+                <br>
+                <label>Epicycle Radius:</label>
+                <input type="text" class="moon-radius" data-type="chord">
+                <br>
+                <h4>Epoch</h4>
+                <label>Mean Anomaly:</label>
+                <input class="ano-epoch" data-type="angle"><br>
+
+                <input type="checkbox" class="default-epoch" id="moon-epoch-default-76543234235" checked>
+                <label for="moon-epoch-default-76543234235">Choose default Nabonassar Epoch</label>
+                <br>
+                <label>Epoch:</label>
+                <input type="text" class="epoch" value="-746 Feb. 26" data-type="datetime">
+            </details>
+
+        </section>
+
+        <section id="moon-latitude-epoch">
+            <h2> Moon's Argument of Latitude at Epoch</h2>
+            <p class="explain">Find two eclipses with the same magnitude, that occured near opposite nodes, on the same side, and with the moon approximately the same distance from the Earth.</p>
+            <form class="form-observe">
+            <label>Observation 1:</label>
+            <input type="text" class="t1" data-type="datetime"><br>
+            <label>Node:</label>
+            <select class="node1" data-type="text">
+                <option value="ascending">Ascending Node</option>
+                <option value="descending">Descending Node</option>
+            </select>
+            <br><br>
+            <label>Observation 2:</label>
+            <input type="text" class="t2" data-type="datetime"><br>
+            <label>Node:</label>
+            <select class="node2" data-type="text">
+                <option value="ascending">Ascending Node</option>
+                <option value="descending" selected>Descending Node</option>
+            </select>
+            <br><br>
+            <label> Equation of Time: </label>
+            <input type="text" class="eq" data-type="time"><br><br>
+            <label>Side:</label>
+            <select class="side" data-type="text">
+                <option value="north">From the North</option>
+                <option value="south">From the South</option>
+            </select>
+            </form>
+            <h3>Position at Epoch</h3>
+            <label>Mean Argument of Latitude:</label>
+            <span type="text" class="arg-lat" data-type="angle"></span>
+            <br><br>
+            <details>
+                <summary>Parameters</summary>
+                <h3> Month Parameters </h3>
+                <label>Tropical Month:</label>
+                <input type="text" class="tropical-month" data-type="time" data-sg-prec="6">
+                <br>
+                <label>Anomalistic Month:</label>
+                <input type="text" class="anomaly-month" data-type="time" data-sg-prec="6">
+                <br>
+                <label>Draconic Month:</label>
+                <input type="text" class="draconic-month" data-type="time" data-sg-prec="6">
+                <br>
+                <label>Epicycle Radius:</label>
+                <input type="text" class="moon-radius" data-type="chord">
+                <br>
+                <h4>Epoch</h4>
+                <label>Mean Anomaly:</label>
+                <input class="ano-epoch" data-type="angle"><br>
+
+                <input type="checkbox" class="default-epoch" id="moon-epoch-default-76543234235" checked>
+                <label for="moon-epoch-default-76543234235">Choose default Nabonassar Epoch</label>
+                <br>
+                <label>Epoch:</label>
+                <input type="text" class="epoch" value="-746 Feb. 26" data-type="datetime">
+            </details>
+        </section>
+        <section id="moon-anomaly">
+            <h2> Moon's First Equation of Anomaly</h2>
+            <label>Mean Anomaly:</label>
+            <input type="text" class="mean" data-type="angle">
+            <br>
+            <label>Equation of Anomaly:</label>
+            <input type="text" class="equation" data-type="angle">
+            <br>
+            <label>Radius of Epicycle:</label>
+            <input type="text" class="eccentricity" data-type="chord">
+            <br>
+        </section>
+
+        <section id="moon-position">
+            <h2> Moon Position Calculator </h2>
+              <label>Date and Time:</label>
+              <input type="text" class="time" data-type="datetime">
+              <br>
+        </section>
+
+        <section id="moon-2nd-anomaly">
+            <h2> Lunar Second Anomaly From Observations </h2>
+
+            <p class="explain">Observations should be made when the moon's mean anomaly and mean elongation are both at 90 or 270 (where the effect is greatest), and the ecliptic angle is 90 degrees (i.e. ecliptic is perpendicular to the altitude circle) so that the effect of parallax on the observed longitude is negligible.</p>
+            <h3>  Observations made with Instrument </h3>
+
+            <form class="form-observe">
+            <label>Sun Longitude:</label>
+            <input class="sun-long" data-type="angle" data-subtype="zodiac">
+            <br>
+            <label>Moon Longitude:</label>
+            <input class="moon-long" data-type="angle" data-subtype="zodiac">
+            <br>
+            <label>Elongation:</label>
+            <input class="elong" data-type="angle">
+            <br>
+
+            <h3> Position from Theory </h3>
+            <label>Sun Mean Longitude:</label>
+            <input class="sun-mean-long" data-type="angle" data-subtype="zodiac">
+            <br>
+            <label>Moon Mean Longitude:</label>
+            <input class="moon-mean-long" data-type="angle" data-subtype="zodiac">
+            <br>
+
+
+            <label>Mean Elongation:</label>
+            <span class="mean-elong" data-type="angle"></span>
+            <br><br>
+            <h3> Equations of Anomaly</h3>
+            <label>Moon's Anomaly (total):</label>
+            <span class="anomaly" data-type="angle"></span>
+            <br>
+
+            <label>Moon's First Anomaly:</label>
+            <input class="first-anomaly" data-type="angle">
+            <br>
+            <label>Moon's Second Anomaly:</label>
+            <span class="second-anomaly" data-type="angle"></span>
+            <br><br>
+            </form>
+            
+        </section>
+
+        <section id="moon-eccentricity">
+            <h2> Moon Eccentricity for Second Anomaly </h2>
+
+            <form class="form-epicycle">
+            <label>Radius of Epicycle:</label>
+            <input type="text" class="radius" data-type="chord">
+            <br><br>
+            <b>Greatest Equation </b><br>
+            <label>First Anomaly:</label>
+            <input class="first-anomaly" data-type="angle">
+            <br>
+            <label>Second Anomaly:</label>
+            <input class="second-anomaly" data-type="angle">
+            <br>
+            </form>
+            <label>Total Anomaly:</label>
+            <input class="anomaly" data-type="angle">
+            <br><br>
+            <label>Eccentricity:</label>
+            <span class="eccentricity" data-type="chord"></span>
+            <br>
+            <label>Radius of Deferent:</label>
+            <span class="deferent" data-type="chord"></span>
+            <br> 
+            <label>Perigee of Deferent:</label>
+            <span class="deferent-perigee" data-type="chord"></span>
+            <br> 
+            <label>Apogee of Deferent:</label>
+            <span class="deferent-apogee" data-type="chord">1</span>
+            <br> 
+        </section>
+        <section id="moon-direction">
+            <h2> Direction of Mean Apogee of the Moon </h2>
+
+            <p class="explain">Observations should be made when the moon's mean elongation is at about 45, or 135 (where the effect is greatest), and the ecliptic angle is 90 degrees (i.e. ecliptic is perpendicular to the altitude circle) so that the effect of parallax on the observed longitude is negligible.</p>
+            <h3>  Observations made with Instrument </h3>
+
+            <form class="form-observe">
+            <label>Sun Longitude:</label>
+            <input class="sun-long" data-type="angle" data-subtype="zodiac">
+            <br>
+            <label>Moon Longitude:</label>
+            <input class="moon-long" data-type="angle" data-subtype="zodiac">
+            <br>
+            <label>Elongation:</label>
+            <input class="elong" data-type="angle">
+            <br>
+            <h3> Position from Theory </h3>
+            <label>Sun Mean Longitude:</label>
+            <input class="sun-mean-long" data-type="angle" data-subtype="zodiac">
+            <br>
+            <label>Moon Mean Longitude:</label>
+            <input class="moon-mean-long" data-type="angle" data-subtype="zodiac">
+            <br>
+            <label>Moon Mean Anomaly:</label>
+            <input class="moon-mean-ano" data-type="angle" data-subtype="zodiac">
+            <br>
+
+            </form>
+
+        </section>
+
+        <section id="settings">
+            <h2> Settings </h2>
+            <form>
+                <br>Numbers:<br>
+                <input id="settings-option-sexagesimal" type="checkbox">
+                <label for="settings-option-sexagesimal">Use sexagesimal instead of decimal for fractional numbers</label>
+                <br>
+                <br>Chords:<br>
+                <input id="settings-option-base60" type="checkbox">
+                <label for="settings-option-base60">Use a radius of 60 instead of unit radius.</label>
+                <br>
+            </form>
+        </section>
+    </main>
+</body>
+</html>
