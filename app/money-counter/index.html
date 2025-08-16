@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="cache-control" max-age="31536000, public">
+    <title>Jamaican Currency Counter</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #009639 0%, #00B04F 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .currency-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .currency-item {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .currency-item:hover {
+            border-color: #009639;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .currency-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .currency-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9rem;
+            text-align: center;
+            border: 2px solid #ddd;
+        }
+
+        .coin {
+            border-radius: 50%;
+        }
+
+        .currency-details h3 {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .currency-type {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .quantity-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .quantity-input:focus {
+            outline: none;
+            border-color: #009639;
+        }
+
+        .subtotal {
+            background: #009639;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .total-section {
+            background: linear-gradient(135deg, #009639 0%, #00B04F 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .total-amount {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .total-label {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+            transform: translateY(-2px);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .currency-info img.note{
+            width: 120px;
+        }
+        .currency-info img.coin{
+            width: 120px;
+        }
+
+        @media (max-width: 768px) {
+            .currency-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .total-amount {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇯🇲 Jamaican Currency Counter</h1>
+            <p>Count your JMD coins and notes with ease</p>
+        </div>
+
+        <div class="content">
+            <div class="total-section">
+                <div class="total-amount" id="totalAmount">$0</div>
+                <div class="total-label">Total Amount (JMD)</div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">💰 Coins <span id="coin-total"></span></h2>
+                <div class="currency-grid">
+                    <div class="currency-item">
+                        <div class="currency-info">
+                            <img class="coin" src="assets/jamaica_money/1.png">
+                            <div class="currency-details">
+                                <h3>One Dollar</h3>
+                                <div class="currency-type">Coin</div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" class="quantity-input" id="coin1" min="0" placeholder="Quantity" data-value="1">
+                            <div class="subtotal" id="subtotal1">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="currency-item">
+                        <div class="currency-info">
+                            <img class="coin" src="assets/jamaica_money/5.png">
+                            <div class="currency-details">
+                                <h3>Five Dollars</h3>
+                                <div class="currency-type">Coin</div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" class="quantity-input" id="coin5" min="0" placeholder="Quantity" data-value="5">
+                            <div class="subtotal" id="subtotal5">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="currency-item">
+                        <div class="currency-info">
+                            <img class="coin" src="assets/jamaica_money/10.png">
+                            <div class="currency-details">
+                                <h3>Ten Dollars</h3>
+                                <div class="currency-type">Coin</div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" class="quantity-input" id="coin10" min="0" placeholder="Quantity" data-value="10">
+                            <div class="subtotal" id="subtotal10">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="currency-item">
+                        <div class="currency-info">
+                            <img class="coin" src="assets/jamaica_money/20.png">
+                            <div class="currency-details">
+                                <h3>Twenty Dollars</h3>
+                                <div class="currency-type">Coin</div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" class="quantity-input" id="coin20" min="0" placeholder="Quantity" data-value="20">
+                            <div class="subtotal" id="subtotal20">$0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2 class="section-title">💵 Banknotes <span id="note-total"></span></h2>
+                <div class="currency-grid">
+                    <div class="currency-item">
+                        <div class="currency-info">
+                            <img class="note" src="assets/jamaica_money/50.png">
+                            <div class="currency-details">
+                                <h3>Fifty Dollars</h3>
+                                <div class="currency-type">Banknote</div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" class="quantity-input" id="note50" min="0" placeholder="Quantity" data-value="50">
+                            <div class="subtotal" id="subtotal50">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="currency-item">
+                        <div class="currency-info">
+                            <img class="note" src="assets/jamaica_money/100.png">
+                            <div class="currency-details">
+                                <h3>One Hundred Dollars</h3>
+                                <div class="currency-type">Banknote</div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" class="quantity-input" id="note100" min="0" placeholder="Quantity" data-value="100">
+                            <div class="subtotal" id="subtotal100">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="currency-item">
+                        <div class="currency-info">
+                            <img class="note" src="assets/jamaica_money/500.png">
+                            <div class="currency-details">
+                                <h3>Five Hundred Dollars</h3>
+                                <div class="currency-type">Banknote</div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" class="quantity-input" id="note500" min="0" placeholder="Quantity" data-value="500">
+                            <div class="subtotal" id="subtotal500">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="currency-item">
+                        <div class="currency-info">
+                            <img class="note" src="assets/jamaica_money/1000.png">
+                            <div class="currency-details">
+                                <h3>One Thousand Dollars</h3>
+                                <div class="currency-type">Banknote</div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" class="quantity-input" id="note1000" min="0" placeholder="Quantity" data-value="1000">
+                            <div class="subtotal" id="subtotal1000">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="currency-item">
+                        <div class="currency-info">
+                            <img class="note" src="assets/jamaica_money/2000.png">
+                            <div class="currency-details">
+                                <h3>Two Thousand Dollars</h3>
+                                <div class="currency-type">Banknote</div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" class="quantity-input" id="note2000" min="0" placeholder="Quantity" data-value="2000">
+                            <div class="subtotal" id="subtotal2000">$0</div>
+                        </div>
+                    </div>
+
+                    <div class="currency-item">
+                        <div class="currency-info">
+                            <img class="note" src="assets/jamaica_money/5000.png">
+                            <div class="currency-details">
+                                <h3>Five Thousand Dollars</h3>
+                                <div class="currency-type">Banknote</div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" class="quantity-input" id="note5000" min="0" placeholder="Quantity" data-value="5000">
+                            <div class="subtotal" id="subtotal5000">$0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-primary" onclick="copyURL()">📋 Copy URL</button>
+                <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">URL copied to clipboard!</div>
+
+    <script>
+        const currencyIds = ['coin1', 'coin5', 'coin10', 'coin20', 'note50', 'note100', 'note500', 'note1000', 'note2000', 'note5000'];
+
+        function formatCurrency(amount) {
+            return `$${amount.toLocaleString('en-JM', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+        }
+
+        function updateSubtotal(inputElement) {
+            const quantity = parseInt(inputElement.value) || 0;
+            const value = parseInt(inputElement.dataset.value);
+            const subtotal = quantity * value;
+            const subtotalElement = document.getElementById(`subtotal${value}`);
+            subtotalElement.textContent = formatCurrency(subtotal);
+        }
+
+        function calculateTotal() {
+            let total = 0;
+            let coinTotal = 0;
+            let noteTotal = 0;
+
+            currencyIds.forEach(id => {
+                const input = document.getElementById(id);
+                const quantity = parseInt(input.value) || 0;
+                const value = parseInt(input.dataset.value);
+                total += quantity * value;
+
+                if(id.match("coin"))
+                    coinTotal += quantity*value;
+                if(id.match("note"))
+                    noteTotal += quantity*value;
+            });
+            document.getElementById('totalAmount').textContent = formatCurrency(total);
+            document.getElementById('coin-total').textContent = coinTotal != 0? `(${formatCurrency(coinTotal)})`:"";
+            document.getElementById('note-total').textContent = noteTotal != 0? `(${formatCurrency(noteTotal)})`:"";
+        }
+
+        function updateURL() {
+            const params = new URLSearchParams();
+            currencyIds.forEach(id => {
+                const value = document.getElementById(id).value;
+                if (value && value !== '0') {
+                    params.set(id, value);
+                }
+            });
+            
+            const newURL = window.location.origin + window.location.pathname + 
+                          (params.toString() ? '?' + params.toString() : '');
+            
+            // Use replaceState to avoid form resubmission dialogs
+            history.replaceState(null, '', newURL);
+        }
+
+        function loadFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            currencyIds.forEach(id => {
+                const value = params.get(id);
+                if (value) {
+                    const input = document.getElementById(id);
+                    input.value = value;
+                    updateSubtotal(input);
+                }
+            });
+            calculateTotal();
+        }
+
+        function copyURL() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                showToast();
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = window.location.href;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showToast();
+            });
+        }
+
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function clearAll() {
+            currencyIds.forEach(id => {
+                const input = document.getElementById(id);
+                input.value = '';
+                updateSubtotal(input);
+            });
+            calculateTotal();
+            updateURL();
+        }
+
+        // Add event listeners to all inputs
+        currencyIds.forEach(id => {
+            const input = document.getElementById(id);
+            input.addEventListener('input', function() {
+                updateSubtotal(this);
+                calculateTotal();
+                updateURL();
+            });
+        });
+
+        // Load data from URL on page load
+        window.addEventListener('load', loadFromURL);
+
+        // Prevent form resubmission on page refresh
+        if (window.history.replaceState) {
+            window.addEventListener('beforeunload', function() {
+                // This helps prevent form resubmission dialogs
+            });
+        }
+
+        // Service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(registration => console.log('Service Worker Registered', registration))
+                .catch(error => console.log('Service Worker Registration Failed', error));
+        }
+    </script>
+</body>
+</html>
