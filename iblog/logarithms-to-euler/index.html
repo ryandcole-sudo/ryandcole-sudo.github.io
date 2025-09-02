@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ryan Cole's Blog - Exploring Mathematics, Science, Computer Science, and Technology History">
+    <meta name="author" content="Ryan Cole">
+    <title>Logarithms to Euler's Formula - Ryan Cole's Blog</title>
+    
+    <style>
+        :root {
+            --primary-color: #088;
+            --accent-color: #cc5500;
+            --text-color: #1b1f23;
+            --bg-color: #ffffff;
+            --section-bg: #f8f9fa;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --border-radius: 8px;
+            --transition: all 0.3s ease;
+            --code-bg: #f4f4f4;
+            --quote-border: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.7;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+        }
+
+        /* Header and Navigation */
+        header {
+            background: var(--bg-color);
+            box-shadow: var(--shadow);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        nav a:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .back-link {
+            background-color: var(--section-bg);
+            border: 2px solid var(--primary-color);
+        }
+
+        .back-link:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .burg {
+            display: none;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        /* Main Content */
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 6rem 2rem 2rem;
+        }
+
+        /* Blog Header */
+        .blog-header {
+            text-align: center;
+            padding: 3rem 0;
+            background: linear-gradient(135deg, var(--section-bg) 0%, #e3f2fd 100%);
+            border-radius: var(--border-radius);
+            margin-bottom: 3rem;
+            box-shadow: var(--shadow);
+        }
+
+        .blog-header h1 {
+            font-size: 2.8rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-family: 'Georgia', serif;
+        }
+
+        .blog-meta {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            color: #666;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+
+        .blog-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Article Content */
+        .article-content {
+            background: white;
+            padding: 3rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 3rem;
+        }
+
+        .article-content h2 {
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin: 2rem 0 1rem 0;
+            font-family: 'Georgia', serif;
+            border-bottom: 3px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .article-content h3 {
+            color: var(--text-color);
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem 0;
+            font-family: 'Georgia', serif;
+        }
+
+        .article-content p {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            text-align: justify;
+        }
+
+        .article-content blockquote {
+            background: var(--section-bg);
+            border-left: 5px solid var(--primary-color);
+            padding: 1.5rem 2rem;
+            margin: 2rem 0;
+            font-style: italic;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+        }
+
+        .article-content ul, .article-content ol {
+            margin: 1.5rem 0;
+            padding-left: 2rem;
+        }
+
+        .article-content li {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .article-content code {
+            background: var(--code-bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .article-content pre {
+            background: var(--code-bg);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .article-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Timeline Styles */
+        .timeline {
+            position: relative;
+            margin: 2rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 30px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--primary-color);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin: 2rem 0;
+            padding-left: 80px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 19px;
+            top: 10px;
+            width: 25px;
+            height: 25px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: var(--shadow);
+        }
+
+        .timeline-date {
+            position: absolute;
+            left: -50px;
+            top: 8px;
+            background: var(--primary-color);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            width: 80px;
+            text-align: center;
+        }
+
+        .timeline-content {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .timeline-content h4 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--section-bg);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .sidebar h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-family: 'Georgia', serif;
+        }
+
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .tag {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .tag:hover {
+            background: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        /* Newsletter Subscription */
+        .newsletter-signup {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .newsletter-signup h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .newsletter-signup input[type="email"] {
+            width: 70%;
+            padding: 1rem;
+            border: 2px solid var(--primary-color);
+            border-radius: var(--border-radius) 0 0 var(--border-radius);
+            font-size: 1rem;
+        }
+
+        .newsletter-signup button {
+            width: 30%;
+            padding: 1rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .newsletter-signup button:hover {
+            background: var(--accent-color);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--text-color);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: var(--accent-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 1rem;
+            }
+
+            nav ul {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                gap: 2rem;
+                font-size: 1.2rem;
+                display: none;
+            }
+
+            .burg {
+                display: block;
+            }
+
+            main {
+                padding: 5rem 1rem 2rem;
+            }
+
+            .blog-header h1 {
+                font-size: 2rem;
+            }
+
+            .article-content {
+                padding: 2rem 1.5rem;
+            }
+
+            .blog-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .timeline::before {
+                left: 15px;
+            }
+
+            .timeline-item {
+                padding-left: 50px;
+            }
+
+            .timeline-item::before {
+                left: 4px;
+            }
+
+            .timeline-date {
+                position: static;
+                margin-bottom: 0.5rem;
+                width: auto;
+                display: inline-block;
+            }
+
+            .newsletter-signup input[type="email"] {
+                width: 100%;
+                margin-bottom: 1rem;
+                border-radius: var(--border-radius);
+            }
+
+            .newsletter-signup button {
+                width: 100%;
+                border-radius: var(--border-radius);
+            }
+        }
+
+        /* Reading Progress Bar */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: var(--accent-color);
+            z-index: 1001;
+            transition: width 0.3s ease;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .article-content {
+            animation: fadeInUp 0.8s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+    
+    <header>
+        <div class="header-content">
+            <a href="index.html" class="logo">Ryan Cole</a>
+            
+            <nav>
+                <span class="burg" id="burger-menu">
+                    <svg class="button" height="32" width="32" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="6" width="24" height="4" fill="currentColor"/>
+                        <rect x="4" y="14" width="24" height="4" fill="currentColor"/>
+                        <rect x="4" y="22" width="24" height="4" fill="currentColor"/>
+                    </svg>
+                    <svg class="close" height="32" width="32" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                        <line x1="4" y1="4" x2="28" y2="28" stroke="currentColor" stroke-width="4"/>
+                        <line x1="4" y1="28" x2="28" y2="4" stroke="currentColor" stroke-width="4"/>
+                    </svg>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="blog-header" id="top">
+            <h1>Logarithms to Euler's Formula</h1>
+            <div class="blog-meta">
+                <span>📅 Published: September 2, 2025</span>
+                <span>⏱️ 15 min read</span>
+                <span>👤 Ryan Cole</span>
+            </div>
+        </div>
+
+        <article class="article-content"></article>
+
+        <div class="sidebar">
+        </div>
+
+        <div class="newsletter-signup">
+            <h3>Stay Updated</h3>
+            <p>Get notified when I publish new articles about mathematics, science, and technology.</p>
+            <form action="https://api.follow.it/subscription-form/TE4zcFNqTWtGa28yY2QwZTV1c1M2MCtVbXd1eDUwUGNLeTRXTG1BWWh1WTRCTmNGQWg0R2VNZCtCYmNIVHNCcVg0RmFzMnhwSW9HdlYvWldkMDNWcDdxS2U4RVdLUWlkTTJrckw4WlA0QmVQMHc2b1RRRzdoblRKa1pIS3NlcjF8MTRpQi9Mam1iZldMTEF4TVgwL2Y3QndCUVdrOXN6eWtPNWNjUkxrTDFOWT0=/8" method="post">
+                <input type="email" name="email" placeholder="Enter your email address" required>
+                <button type="submit">Subscribe</button>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Ryan Cole. All rights reserved. | <a href="index.html">Back to Main Site</a></p>
+        <p>Passionate about Mathematics, Science, and Technology</p>
+    </footer>
+</body>
+</html>
