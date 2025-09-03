@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complex Number Multiplication Visualizer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .complex-input {
+            background: linear-gradient(145deg, #f7fafc, #edf2f7);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .complex-input h3 {
+            margin: 0 0 15px 0;
+            color: #2d3748;
+            font-size: 1.3em;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .results-section {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .numerical-results {
+            background: linear-gradient(145deg, #f0fff4, #e6fffa);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-item {
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 10px;
+            border-left: 4px solid #38b2ac;
+        }
+
+        .result-item strong {
+            color: #2d3748;
+        }
+
+        .visualization {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        canvas {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            width: 100%;
+            height: 400px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #333;
+        }
+
+        .formula-section {
+            background: linear-gradient(145deg, #fff5f5, #fed7e2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #e53e3e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Complex Number Multiplication Visualizer</h1>
+        
+        <div class="input-section">
+            <div class="complex-input">
+                <h3>First Complex Number (z₁)</h3>
+                <div class="input-group">
+                    <input type="number" id="a" value="3" step="0.1"> + 
+                    <input type="number" id="b" value="4" step="0.1">i
+                </div>
+            </div>
+            
+            <div class="complex-input">
+                <h3>Second Complex Number (z₂)</h3>
+                <div class="input-group">
+                    <input type="number" id="c" value="2" step="0.1"> + 
+                    <input type="number" id="d" value="1" step="0.1">i
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section">
+            <div class="numerical-results">
+                <h3>Numerical Results</h3>
+                <div id="results"></div>
+            </div>
+            
+            <div class="visualization">
+                <h3>Graphical Visualization</h3>
+                <canvas id="complexCanvas" width="600" height="400"></canvas>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ff6b6b;"></div>
+                        <span>z₁ = a + bi</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #4ecdc4;"></div>
+                        <span>z₂ = c + di</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #45b7d1;"></div>
+                        <span>z₁ × z₂</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="formula-section">
+            <h3>Multiplication Formulas</h3>
+            <div class="formula">
+                Rectangular Form: (a + bi)(c + di) = (ac - bd) + (ad + bc)i
+            </div>
+            <div class="formula">
+                Polar Form: r₁e^(iθ₁) × r₂e^(iθ₂) = (r₁ × r₂)e^(i(θ₁ + θ₂))
+            </div>
+            <div class="formula">
+                Magnitudes multiply: |z₁ × z₂| = |z₁| × |z₂|
+            </div>
+            <div class="formula">
+                Arguments add: arg(z₁ × z₂) = arg(z₁) + arg(z₂)
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculate() {
+            const a = parseFloat(document.getElementById('a').value);
+            const b = parseFloat(document.getElementById('b').value);
+            const c = parseFloat(document.getElementById('c').value);
+            const d = parseFloat(document.getElementById('d').value);
+
+            // Complex number multiplication: (a + bi)(c + di) = (ac - bd) + (ad + bc)i
+            const realPart = a * c - b * d;
+            const imagPart = a * d + b * c;
+
+            // Calculate magnitudes
+            const mag1 = Math.sqrt(a * a + b * b);
+            const mag2 = Math.sqrt(c * c + d * d);
+            const magProduct = Math.sqrt(realPart * realPart + imagPart * imagPart);
+
+            // Calculate arguments (angles)
+            const arg1 = Math.atan2(b, a);
+            const arg2 = Math.atan2(d, c);
+            const argProduct = Math.atan2(imagPart, realPart);
+
+            // Convert radians to degrees
+            const arg1Deg = arg1 * 180 / Math.PI;
+            const arg2Deg = arg2 * 180 / Math.PI;
+            const argProductDeg = argProduct * 180 / Math.PI;
+
+            // Display results
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `
+                <div class="result-item">
+                    <strong>z₁ = ${a} + ${b}i</strong><br>
+                    Magnitude: ${mag1.toFixed(3)}<br>
+                    Argument: ${arg1Deg.toFixed(1)}°
+                </div>
+                <div class="result-item">
+                    <strong>z₂ = ${c} + ${d}i</strong><br>
+                    Magnitude: ${mag2.toFixed(3)}<br>
+                    Argument: ${arg2Deg.toFixed(1)}°
+                </div>
+                <div class="result-item">
+                    <strong>z₁ × z₂ = ${realPart.toFixed(3)} + ${imagPart.toFixed(3)}i</strong><br>
+                    Magnitude: ${magProduct.toFixed(3)}<br>
+                    Argument: ${argProductDeg.toFixed(1)}°
+                </div>
+                <div class="result-item">
+                    <strong>Verification:</strong><br>
+                    |z₁| × |z₂| = ${(mag1 * mag2).toFixed(3)}<br>
+                    arg(z₁) + arg(z₂) = ${(arg1Deg + arg2Deg).toFixed(1)}°
+                </div>
+            `;
+
+            // Draw visualization
+            drawComplexPlane(a, b, c, d, realPart, imagPart, mag1, mag2, magProduct, arg1, arg2, argProduct);
+        }
+
+        function drawComplexPlane(a, b, c, d, realPart, imagPart, mag1, mag2, magProduct, arg1, arg2, argProduct) {
+            const canvas = document.getElementById('complexCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            // Set up coordinate system
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const scale = Math.min(width, height) / (2 * Math.max(magProduct + 1, 8));
+            
+            // Draw axes
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, height);
+            ctx.stroke();
+            
+            // Draw grid
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.lineWidth = 0.5;
+            for (let i = -10; i <= 10; i++) {
+                if (i !== 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(centerX + i * scale, 0);
+                    ctx.lineTo(centerX + i * scale, height);
+                    ctx.moveTo(0, centerY + i * scale);
+                    ctx.lineTo(width, centerY + i * scale);
+                    ctx.stroke();
+                }
+            }
+            
+            // Draw axis labels
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.fillText('Real', width - 35, centerY - 10);
+            ctx.fillText('Imaginary', centerX + 10, 15);
+            
+            // Function to draw a complex number vector
+            function drawVector(real, imag, color, label, thickness = 2) {
+                const x = centerX + real * scale;
+                const y = centerY - imag * scale;
+                
+                // Draw vector
+                ctx.strokeStyle = color;
+                ctx.lineWidth = thickness;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                
+                // Draw arrowhead
+                const angle = Math.atan2(-imag, real);
+                const arrowLength = 10;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - arrowLength * Math.cos(angle - Math.PI/6), y - arrowLength * Math.sin(angle - Math.PI/6));
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - arrowLength * Math.cos(angle + Math.PI/6), y - arrowLength * Math.sin(angle + Math.PI/6));
+                ctx.stroke();
+                
+                // Draw point
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Draw label
+                ctx.fillStyle = '#333';
+                ctx.font = '14px Arial';
+                ctx.fillText(label, x + 8, y - 8);
+                
+                // Draw magnitude arc
+                if (Math.sqrt(real * real + imag * imag) > 0.1) {
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([3, 3]);
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, Math.sqrt(real * real + imag * imag) * scale * 0.3, 0, Math.atan2(-imag, real), false);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+            }
+            
+            // Draw the three complex numbers
+            drawVector(a, b, '#ff6b6b', `z₁(${a}, ${b})`);
+            drawVector(c, d, '#4ecdc4', `z₂(${c}, ${d})`);
+            drawVector(realPart, imagPart, '#45b7d1', `z₁×z₂(${realPart.toFixed(2)}, ${imagPart.toFixed(2)})`, 3);
+            
+            // Draw magnitude comparison
+            const maxMag = Math.max(mag1, mag2, magProduct);
+            if (maxMag > 0) {
+                const barY = height - 60;
+                const barWidth = 150;
+                const barHeight = 15;
+                
+                // Background
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillRect(20, barY - 50, barWidth, 50);
+                
+                // Magnitude bars
+                ctx.fillStyle = '#ff6b6b';
+                ctx.fillRect(25, barY - 45, (mag1 / maxMag) * (barWidth - 10), barHeight);
+                ctx.fillStyle = '#4ecdc4';
+                ctx.fillRect(25, barY - 25, (mag2 / maxMag) * (barWidth - 10), barHeight);
+                ctx.fillStyle = '#45b7d1';
+                ctx.fillRect(25, barY - 5, (magProduct / maxMag) * (barWidth - 10), barHeight);
+                
+                // Labels
+                ctx.fillStyle = '#333';
+                ctx.font = '10px Arial';
+                ctx.fillText(`|z₁| = ${mag1.toFixed(2)}`, 25, barY - 47);
+                ctx.fillText(`|z₂| = ${mag2.toFixed(2)}`, 25, barY - 27);
+                ctx.fillText(`|z₁×z₂| = ${magProduct.toFixed(2)}`, 25, barY - 7);
+            }
+        }
+
+        // Add event listeners
+        document.getElementById('a').addEventListener('input', calculate);
+        document.getElementById('b').addEventListener('input', calculate);
+        document.getElementById('c').addEventListener('input', calculate);
+        document.getElementById('d').addEventListener('input', calculate);
+
+        // Initial calculation
+        calculate();
+    </script>
+</body>
+</html>

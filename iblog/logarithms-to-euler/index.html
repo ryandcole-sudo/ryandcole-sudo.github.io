@@ -7,6 +7,13 @@
     <meta name="author" content="Ryan Cole">
     <title>Logarithms to Euler's Formula - Ryan Cole's Blog</title>
     
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css">
+    
+    <!-- KaTeX JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/contrib/auto-render.min.js"></script>
+    
     <style>
         :root {
             --primary-color: #088;
@@ -465,7 +472,41 @@
         .article-content {
             animation: fadeInUp 0.8s ease-out;
         }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+            border: 1px solid #d0d7de;
+        }
+        
+        th, td {
+            border: 1px solid #d0d7de;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+        }
+        
+        .number {
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .power-2 {
+            color: #0969da;
+            font-weight: 500;
+        }
+        
+        .power-10 {
+            color: #cf222e;
+            font-weight: 500;
+        }
     </style>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 
 <body>
@@ -501,10 +542,153 @@
             </div>
         </div>
 
-        <article class="article-content"></article>
+        <article class="article-content">
+<h2>Logarithms</h2>
+
+    <p>Logarithms were invented to solve a very simple problem: multiplication is hard. Multiplying numbers by hand is tedious and prone to errors, and in the 16th century scientist were working on a lot of problems that involve multiplying by hand. There are some cases though where multiplication is very easy. For example, if the two numbers just happen to be a power of $10$.</p>
+
+    <p>But why is it so easy to multiply powers of $10$; is it because there is something special about the number $10$? Not really. Students of computer science might find it just as easy to multiply powers of two. For example $8\times16=128$. This looks intuitively harder to most of us, but the its really the same process as multiplying multiples of $10$, as we can see from the table below.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Index (x)</th>
+                <th>2<sup>x</sup></th>
+                <th>10<sup>x</sup></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td class="number">1</td><td class="power-2">2</td><td class="power-10">10</td></tr>
+            <tr><td class="number">2</td><td class="power-2">4</td><td class="power-10">100</td></tr>
+            <tr><td class="number">3</td><td class="power-2">8</td><td class="power-10">1,000</td></tr>
+            <tr><td class="number">4</td><td class="power-2">16</td><td class="power-10">10,000</td></tr>
+            <tr><td class="number">5</td><td class="power-2">32</td><td class="power-10">100,000</td></tr>
+            <tr><td class="number">6</td><td class="power-2">64</td><td class="power-10">1,000,000</td></tr>
+            <tr><td class="number">7</td><td class="power-2">128</td><td class="power-10">10,000,000</td></tr>
+            <tr><td class="number">8</td><td class="power-2">256</td><td class="power-10">100,000,000</td></tr>
+            <tr><td class="number">9</td><td class="power-2">512</td><td class="power-10">1,000,000,000</td></tr>
+            <tr class="highlight"><td class="number">10</td><td class="power-2">1,024</td><td class="power-10">10,000,000,000</td></tr>
+        </tbody>
+    </table>
+
+    <p>In the above table, we have the multiples of $2$ and $10$. To multiply numbers, we add the index numbers in the left column, and find the corresponding multiple. For example to multiply $8\times16$, we add the respective indices $3+4=7$, and the corresponding number with index $7$ is $128$, which is our answer for multiplication. The index number in this table is the number we call the <strong>logarithm</strong>—the number we add to solve the multiplication problem.</p>
+
+    <p>But this simplification relies on the fact that our numbers just so happen to be powers of 2, or powers of 10, and it is easy to see how this could work for powers of any number. But what if we want to multiply two numbers that don't share a common power? and what if we want to multiply fractional numbers? what then?</p>
+
+    <p>The key realization is that we can use powers of any number we want, and for our index we can increment by anything not just one. Logarithm uses a clever but simple idea: let's make the increments as small as possible. Intuitively, this allows us to "squeeze" as many numbers as possible into the table. If our increments are small enough then our table can be used to find practically every number. You can also guess that doing this is going to make our tables very long; the invention of logarithms was a major undertaking.</p>
+
+    <p>From this idea, we can create a simple algorithm for our very own logarithm table. For the index numbers we will have multiples of $0.00001$, and for the powers of $10$ we will have multiples of $1.00001$.</p>
+
+    <p>I have implemented a dynamic lookup table for logarithms based on this:</p>
+
+    <iframe width="80%" height="672px" src="/iblog/asset/log.html"></iframe>
+
+    <p>In the table, the blue numbers are the index or logarithm values, the red numbers are the powers. The number that we input is matched to the closest power.</p>
+
+    <p>Let's do an example:</p>
+
+    <p>Find the product of the numbers $1.765\times9.532$</p>
+
+    <p>Step 1 is to look up both values in the logarithm table:</p>
+
+    <img width="80%" src="/iblog/asset/log1.png">
+    <img width="80%" src="/iblog/asset/log2.png">
+
+    <p>We then add the two index values: $0.56815+2.25467=2.82282$</p>
+
+    <p>Our next step is to lookup of the index of $2.82282$ in the table and find the corresponding power.</p>
+    <img width="80%" src="/iblog/asset/log3.png">
+    <p>The answer is given by the corresponding red number in the table $16.8239907$</p>
+
+    <p>For our logarithms, we made the natural choice of our increment for our index being the same as for the powers. This choice of logarithms is called the <strong>natural logarithm</strong>. It has a very interesting property that for an index of $1$, the corresponding number is always approximately $2.71828$, we can verify this by inputting this number in the lookup table. This is the number we refer to as $e$.</p>
+
+    <p>In general, for our natural logarithm, the index is $x\varepsilon$, where $x$ is an integer and $\epsilon$ is a small number, and the corresponding power is $(1+\varepsilon)^x$.</p>
+
+    <h3>Common Logarithm</h3>
+
+    <p>While the natural logarithm represents the most natural choice for a logarithm, it is not the only choice. Remember, the only criteria is that the increments for both the index and the power are small, they don't have to be the same.</p>
+
+    <p>Another idea for the logarithm is based on using small fractional powers of $10$. This idea was advanced by Henry Briggs. For example, Let us repeatedly take the square root of $10$, $16$ times, or equivalently find $10^{\frac{1}{2^{16}}}$. If we do this we get 1.0000351, this will be used for our powers. And our indices will be $\frac{1}{2^{16}}$. This is called the common logarithm or base-10 logarithm.</p>
+
+    <p>Doing this will make it so that when the index is $1$, the power is $10$. We say that the <strong>base</strong> of the common logarithm is $10$; we can likewise say that the base of the natural logarithm is $e$.</p>
+
+    <h2>Exponential Growth</h2>
+
+    <p>Exponentiation is the inverse of the process we have just done. Many common problems can be solved by it. Exponentiation usually shows up because a quantity increases by a certain percentage each time period. For example, if the population increases by $2\%$ every year, or a loan incurs an interest of $10\%$ every month, we have exponential growth.</p>
+
+    <p>It is natural to ask what happens to the percentage increase, if we consider intervals as small as possible. This allows us to examine systems that increase continuously. In this case, the problem becomes very much like our logarithms problem earlier.</p>
+
+    <p>In much the same way we define the natural logarithm, we can also define a natural exponential function as one where the rate of growth becomes equal to the time interval for small values of the time interval. The base of this exponential function is $e$, so this function is generally written as $e^x$.</p>
+
+    <h2>Complex Numbers</h2>
+
+    <p>Another idea unrelated to the first, but interesting nonetheless, is to ask what happens if we take the square root of $\sqrt{-1}$?</p>
+
+    <p>Seems like a silly question. It is reasonable obvious that the square root of negative numbers cannot be defined, for the simple reason that if you square two numbers, whether negative or positive, the result is always positive.</p>
+
+    <p>Yet mathematicians realized, while solving the cubic, it still works out algebraically anyways if you do it. Let us simply define a new number $i=\sqrt{-1}$.</p>
+
+    <p>But this still seems silly. If I start defining new numbers, wont this just going forever. For example, I might later wonder what's the $\sqrt{i}$ or $\sqrt{-i}$. Won't I have to keep defining additional numbers for these? Wont this process just go on forever?</p>
+
+    <p>As we will see in a moment, this is not the case. It turns out that be just defining this number alone, all other possible questions about the root of any number can be solved. We say that these numbers are <strong>algebraically closed</strong>, as they leave no gap for questions of such sort.</p>
+
+    <h3>Geometry of Complex Numbers</h3>
+
+    <p>In general, a <strong>complex number</strong> is defined as any number $a+bi$, where $a$ and $b$ are real numbers, and $i=\sqrt{-1}$.</p>
+
+    <p>If we multiply two complex numbers, we get the following result:</p>
+
+    $$(a+bi)\times(c+di)= (ac-bd) + (ad+bc)i$$
+
+    <p>The multiplication proceeds like normal, but we must remember $i^2=-1$, which is why there is a negative sign in front of $bd$.</p>
+
+    <p>If we represent the complex by polar coordinates, we can show an interesting result: multiplying complex numbers is the same as multiplying the lengths and adding the angle.</p>
+
+   <p> I have implemented the following to demonstrate complex multiplication:</p>
+<iframe width="80%" loading="lazy" height="672px" src="/iblog/asset/complex.html"></iframe>
+
+
+    <h2>Euler's Formula</h2>
+
+    <p>Once we understand the geometry behind complex the idea behind Euler's formula becomes really simple.</p>
+
+    <p>Let us consider a logarithm table, where the index is given by $\varepsilon i$, and the power is given by $1+\varepsilon i$. If we make $\varepsilon$ very small, the magnitudes of the complex numbers in the power column rapidly approach 1, while the angle in radians is given by $\epsilon$, due to the trigonometric identity $\sin(x)\approx x$, for small angles x.</p>
+
+    <p>If we increase the angle by a continuous amount, while leaving the lengths fixed, what we are doing is in fact a rotation. Thus Euler's formula simple tells us that the natural logarithm table constructed with complex numbers is equivalent to the description of the rotation along a circle with radius of 1.</p>
+
+    <p>The following tool visualizes how repeated multiplication of complex number $1+\varepsilon i$ leads to acontinous rotation</p>
+    <iframe width="80%" loading="lazy" height="672px" src="/iblog/asset/euler.html"></iframe>
+
+    <p>If we rotation half a circle or $pi$ radians, we can see from the diagram the answer should be $-1$. So</p> 
+
+    $$ e^{\pi i} = -1$$
+
+    <p>The famous formula here looks mysterious when written down. But as we can see it is just the result of the simplegeometry of complex numbers and the  properties of logartithms.</p>
+
+    <p> More generally, we can say for any angle $\theta$,</p>
+    $$ e^{ \theta i} = cos\theta + i\sin\theta$$
+        </article>
 
         <div class="sidebar">
         </div>
+
+<!-- minimal settings -->
+<div data-lyket-type="updown" data-lyket-id="my-first-post"></div>
+
+<!-- with namespace -->
+<div
+  data-lyket-type="updown"
+  data-lyket-id="my-second-post"
+  data-lyket-namespace="blog"
+></div>
+
+<!-- with non-default template -->
+<div
+  data-lyket-type="updown"
+  data-lyket-id="my-third-post"
+  data-lyket-namespace="blog"
+  data-lyket-template="reddit"
+ ></div>
 
         <div class="newsletter-signup">
             <h3>Stay Updated</h3>
@@ -516,9 +700,39 @@
         </div>
     </main>
 
+<div id="cusdis_thread"
+  data-host="https://cusdis.com"
+  data-app-id="4c5e57f0-d463-4e0b-ab04-43528be24a32"
+  data-page-id="ryandcole.xyz"
+  data-page-url="https://ryandcole.xyz/iblog/logarithms-to-euler"
+  data-page-title="{{ PAGE_TITLE }}"
+></div>
+<script async defer src="https://cusdis.com/js/cusdis.es.js"></script>
+
+
+
+
     <footer>
         <p>&copy; 2025 Ryan Cole. All rights reserved. | <a href="index.html">Back to Main Site</a></p>
         <p>Passionate about Mathematics, Science, and Technology</p>
     </footer>
+
+    <script>
+        // Render math on page load
+        document.addEventListener("DOMContentLoaded", function() {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ],
+                throwOnError: false
+            });
+        });
+    </script>
+
+<script src="https://unpkg.com/@lyket/widget@latest/dist/lyket.js?apiKey=pt_210407e0164a9271883760db772c57&disableSessionId"></script>
+
+<!-- 100% privacy-first analytics -->
+<script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
 </body>
 </html>

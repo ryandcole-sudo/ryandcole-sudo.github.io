@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complex Number Rotation Visualization</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .description {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #555;
+        }
+        .controls {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .slider-container {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .value-display {
+            display: flex;
+            justify-content: space-between;
+        }
+        .visualization {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .complex-plane {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px;
+        }
+        canvas {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .info-panel {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px;
+        }
+        .result {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        .explanation {
+            background-color: #f1f8ff;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .formula {
+            font-style: italic;
+            text-align: center;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        @media (max-width: 768px) {
+            .visualization {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Complex Number Rotation Visualization</h1>
+    <p class="description">
+        Visualizing how repeated multiplication by (1 + εi) approximates rotation as ε → 0
+    </p>
+
+    <div class="controls">
+        <div class="slider-container">
+            <label for="epsilon">Epsilon (ε):</label>
+            <input type="range" id="epsilon" min="0.001" max="0.1" step="0.001" value="0.05">
+            <div class="value-display">
+                <span>0.001</span>
+                <span id="epsilon-value">0.05</span>
+                <span>0.1</span>
+            </div>
+        </div>
+        
+        <div class="slider-container">
+            <label for="n">Number of multiplications (n):</label>
+            <input type="range" id="n" min="1" max="200" step="1" value="1">
+            <div class="value-display">
+                <span>1</span>
+                <span id="n-value">1</span>
+                <span>200</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="visualization">
+        <div class="complex-plane">
+            <h3>Complex Plane</h3>
+            <canvas id="complexCanvas"></canvas>
+        </div>
+        
+        <div class="info-panel">
+            <h3>Results</h3>
+            <div class="result">
+                <p><strong>Final value:</strong> <span id="final-value">1.00 + 0.05i</span></p>
+                <p><strong>Magnitude:</strong> <span id="magnitude">1.001</span></p>
+                <p><strong>Angle:</strong> <span id="angle">0.050</span> radians (<span id="angle-degrees">2.86</span>°)</p>
+                <p><strong>Expected angle (n×ε):</strong> <span id="expected-angle">0.050</span> radians</p>
+                <p><strong>Error:</strong> <span id="error">0.000</span> radians</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="explanation">
+        <h3>Explanation</h3>
+        <p>This visualization demonstrates how repeated multiplication by (1 + εi) approximates a rotation in the complex plane.</p>
+        
+        <p class="formula">(1 + εi)ⁿ ≈ e^{εni} = cos(nε) + i sin(nε) when ε is small</p>
+        
+        <p>As ε approaches 0, multiplying by (1 + εi) repeatedly produces a result that is very close to a pure rotation by nε radians.</p>
+        
+        <p>The blue point shows the result of the repeated multiplication, while the red point shows the ideal rotation for comparison.</p>
+        
+        <p>Adjust the ε and n sliders to see how the approximation improves as ε becomes smaller and n increases.</p>
+    </div>
+
+    <script>
+        // Get DOM elements
+        const epsilonSlider = document.getElementById('epsilon');
+        const nSlider = document.getElementById('n');
+        const epsilonValue = document.getElementById('epsilon-value');
+        const nValue = document.getElementById('n-value');
+        const finalValue = document.getElementById('final-value');
+        const magnitude = document.getElementById('magnitude');
+        const angle = document.getElementById('angle');
+        const angleDegrees = document.getElementById('angle-degrees');
+        const expectedAngle = document.getElementById('expected-angle');
+        const error = document.getElementById('error');
+        const canvas = document.getElementById('complexCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        function setCanvasSize() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = 300;
+        }
+
+        // Initialize canvas size
+        setCanvasSize();
+        window.addEventListener('resize', setCanvasSize);
+
+        // Update displayed values
+        function updateDisplayValues() {
+            const epsilon = parseFloat(epsilonSlider.value);
+            const n = parseInt(nSlider.value);
+            
+            epsilonValue.textContent = epsilon.toFixed(3);
+            nValue.textContent = n;
+            
+            // Calculate (1 + εi)^n
+            let result = { real: 1, imag: 0 };
+            for (let i = 0; i < n; i++) {
+                const newReal = result.real - epsilon * result.imag;
+                const newImag = result.imag + epsilon * result.real;
+                result = { real: newReal, imag: newImag };
+            }
+            
+            // Calculate magnitude and angle
+            const mag = Math.sqrt(result.real * result.real + result.imag * result.imag);
+            const ang = Math.atan2(result.imag, result.real);
+            
+            // Calculate expected angle and error
+            const expectedAng = n * epsilon;
+            const err = Math.abs(ang - expectedAng);
+            
+            // Update display
+            finalValue.textContent = `${result.real.toFixed(3)} + ${result.imag.toFixed(3)}i`;
+            magnitude.textContent = mag.toFixed(5);
+            angle.textContent = ang.toFixed(5);
+            angleDegrees.textContent = (ang * 180 / Math.PI).toFixed(2);
+            expectedAngle.textContent = expectedAng.toFixed(5);
+            error.textContent = err.toFixed(5);
+            
+            // Draw on canvas
+            drawComplexPlane(epsilon, n, result, mag, ang, expectedAng);
+        }
+
+        // Draw the complex plane with points
+        function drawComplexPlane(epsilon, n, result, magnitude, angle, expectedAngle) {
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 40;
+            const plotSize = Math.min(width, height) - 2 * padding;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const scale = plotSize / 2.2;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw axes
+            ctx.beginPath();
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 1;
+            
+            // X-axis
+            ctx.moveTo(padding, centerY);
+            ctx.lineTo(width - padding, centerY);
+            
+            // Y-axis
+            ctx.moveTo(centerX, padding);
+            ctx.lineTo(centerX, height - padding);
+            
+            ctx.stroke();
+            
+            // Draw axis labels
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            
+            // X-axis labels
+            ctx.fillText('Re', width - padding + 10, centerY);
+            ctx.fillText('-1', centerX - scale, centerY + 15);
+            ctx.fillText('0', centerX, centerY + 15);
+            ctx.fillText('1', centerX + scale, centerY + 15);
+            
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            ctx.fillText('Im', centerX - 10, padding - 10);
+            ctx.fillText('1', centerX - 10, centerY - scale);
+            ctx.fillText('0', centerX - 10, centerY);
+            ctx.fillText('-1', centerX - 10, centerY + scale);
+            
+            // Draw unit circle
+            ctx.beginPath();
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.arc(centerX, centerY, scale, 0, 2 * Math.PI);
+            ctx.stroke();
+            
+            // Convert complex number to canvas coordinates
+            function toCanvasX(real) {
+                return centerX + real * scale;
+            }
+            
+            function toCanvasY(imag) {
+                return centerY - imag * scale;
+            }
+            
+            // Draw the actual result (blue point)
+            const resultX = toCanvasX(result.real);
+            const resultY = toCanvasY(result.imag);
+            
+            ctx.beginPath();
+            ctx.arc(resultX, resultY, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+            
+            // Draw the ideal rotation (red point)
+            const idealReal = Math.cos(expectedAngle);
+            const idealImag = Math.sin(expectedAngle);
+            const idealX = toCanvasX(idealReal);
+            const idealY = toCanvasY(idealImag);
+            
+            ctx.beginPath();
+            ctx.arc(idealX, idealY, 6, 0, 2 * Math.PI);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+            
+            // Draw line from origin to actual result
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(resultX, resultY);
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw line from origin to ideal rotation
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(idealX, idealY);
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw angle arc
+            const arcRadius = scale * 0.3;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, arcRadius, 0, expectedAngle, false);
+            ctx.strokeStyle = 'green';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Add legend
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillStyle = 'blue';
+            ctx.fillText('Actual: (1 + εi)ⁿ', padding, height - padding + 20);
+            ctx.fillStyle = 'red';
+            ctx.fillText('Ideal: e^{εni}', padding, height - padding + 40);
+            ctx.fillStyle = 'green';
+            ctx.fillText(`Angle: ${(expectedAngle).toFixed(3)} rad`, padding, height - padding + 60);
+            
+            // Add value labels
+            ctx.fillStyle = 'blue';
+            ctx.fillText(`(${result.real.toFixed(3)}, ${result.imag.toFixed(3)})`, resultX + 10, resultY);
+            
+            ctx.fillStyle = 'red';
+            ctx.fillText(`(${idealReal.toFixed(3)}, ${idealImag.toFixed(3)})`, idealX + 10, idealY);
+        }
+
+        // Event listeners for sliders
+        epsilonSlider.addEventListener('input', updateDisplayValues);
+        nSlider.addEventListener('input', updateDisplayValues);
+
+        // Initial update
+        updateDisplayValues();
+    </script>
+</body>
+</html>
