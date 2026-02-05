@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      dd {
+        display: inline-block;
+        border: 1px solid black;
+        padding: 0.6em;
+        margin: 0.3em;
+        font-family: garamond;
+      }
+      dd:focus {
+        outline: ridge;
+      }
+      dd.ongoing {
+        position: relative;
+      }
+      dd.ongoing:after {
+        content: "🟢";
+        font-size: 0.5em;
+        position: absolute;
+        top: 0;
+        right: 0;
+      }
+
+      dt {
+        font-weight: bold;
+        color: #322;
+      }
+      .CMP1024 {
+        background: #007bff;
+      }
+      .INT3002 {
+        background: #ff6b6b;
+      }
+      .INT1001 {
+        background: #17c671;
+      }
+      .CMP1026 {
+        background: #ff9f00;
+      }
+      .COM0001 {
+        background: #9b59b6;
+      }
+      .MAT1047{
+        background: cyan;
+      }
+      .CMP1025{
+        background:#008080;
+      }
+      .COM1024{
+        background:#d1e8ff;
+      }
+      .CSP1001{
+        background:#ffc0cb;
+      }
+      .MAT1008{
+        background:#ffd700;
+      }
+      .MEE2003{
+        background:#b87333;
+      }
+      .CIT4024{
+        background:#4a90e2;
+      }
+      .CIT2004{
+        background:#50c878;
+      }
+      .CIT2011{
+        background:#ff6b6b;
+      }
+      .CMP1005{
+        background:#9370db;
+      }
+      .CIT2004{
+        background:#f4a460;
+      }
+      .COM2016{
+        background:#ff69b4;
+      }
+      .CSP1001{
+        background:#7fffd4;
+      }
+      .MAT1043{
+        background:#ffa500;
+      }
+      .MAT2003{
+        background:#40e0d0;
+      }
+     
+      /*
+      .MAT1043{
+        background-color: #2e86ab;
+      }
+      .CIT2004{
+        background-color: #1abc9c;
+      }
+      .MAT2003{
+        background-color: #8e44ad;
+      }
+      .COM2016{
+        background-color: #e67e22;
+      }
+      .CSP1001{
+        background-color: #27ae60;
+      }
+      */
+
+      .info .label {
+        font-weight: bold;
+      }
+        .link-url {
+          display: none;
+          text-decoration:none;
+        }
+        .link-url[href] {
+            display:block;
+        }
+      }
+      @keyframes pulsate-red {
+        0% {
+          background-color: green;
+        }
+        50% {
+          background-color: red;
+        }
+        100% {
+          background-color: green;
+        }
+      }
+
+      @media only screen and (max-width: 480px) {
+        .info {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          resize: vertical;
+          overflow: scroll;
+          min-height: 50px;
+          width: 100vw;
+          background: white;
+          box-shadow: inset grey 1px 1px 0;
+        }
+        dl {
+          padding-bottom: 100px;
+        }
+        .table-status {
+          position: absolute;
+          bottom: 0;
+          right: 0;
+        }
+        .table-status .ongoing {
+          display: none;
+        }
+        .link-url{
+            position:absolute;
+            bottom:15px;
+            right:100px;
+            font-size:150%;
+        }
+        }
+    </style>
+    <title>Utech Timetable</title>
+    <script>
+      let $ = document.querySelector.bind(document);
+      let _$ = document.querySelectorAll.bind(document);
+
+      var nextClassI = 0;
+      let timeToGo = "";
+
+      var info = {
+        time: "",
+        lecturer: "",
+        room: "",
+        batch: "",
+        link: "",
+      };
+      window.onload = function () {
+        _$("dd").forEach((el) => el.setAttribute("tabindex", "0"));
+        _$("time").forEach((el) => {
+          var time = el.getAttribute("datetime");
+          var date = new Date(time);
+        });
+        _$("dd").forEach((el) => {
+          var cl = el.classList;
+          if (cl.contains("online")) el.innerHTML += "<sub>💻</sub>";
+          if (cl.contains("lecture")) el.innerHTML += "<sub>🎤</sub>";
+          if (cl.contains("lab")) el.innerHTML += "<sub>🔬</sub>";
+          if (cl.contains("tutorial")) el.innerHTML += "<sub>👥</sub>";
+          if (cl.contains("elective")) el.innerHTML += "<sub>📚</sub>";
+          if (cl.contains("practical")) el.innerHTML += "<sub>🧪</sub>";
+          el.addEventListener("focus", (e) => {
+            var el = e.target;
+            var start = el.querySelector(".start").getAttribute("datetime");
+            var end = el.querySelector(".end").getAttribute("datetime");
+
+            var startAt = new Date(start);
+            var endAt = new Date(end);
+            var now = new Date();
+
+            var days = (7 + startAt.getDay() - now.getDay()) % 7;
+
+            var nowSeconds = Math.floor(now.getTime() / 1000);
+            var startSeconds = Math.floor(startAt.getTime() / 1000);
+            var endSeconds = Math.floor(endAt.getTime() / 1000);
+
+            const WK = 604800; //seconds in a week
+            var timeLeft = mod(startSeconds - nowSeconds, WK);
+            var duration = mod(endSeconds - startSeconds, WK);
+
+            if (duration >= WK - timeLeft) el.classList.add("ongoing");
+            else el.classList.remove("ongoing");
+
+            days = days == 0 && nowSeconds > startSeconds ? 7 : days;
+
+            var remDays = Math.floor(timeLeft / 86000);
+            var remHours = Math.floor(timeLeft / 3600) % 24;
+            var remMinutes = Math.floor(timeLeft / 60) % 60;
+            var remSeconds = Math.floor(timeLeft % 60);
+
+            let timeMore =
+              (remHours != 0 ? remHours : "") +
+              (remHours !== 0 ? " hour" : "") +
+              (remHours > 1 ? "s " : " ") +
+              remMinutes +
+              "minute" +
+              (remMinutes !== 1 ? "s" : "");
+
+            let timeExtra = "";
+            if (remHours <= 3) {
+              timeExtra = el == _$("dd")[nextClassI] ? timeMore : "";
+              timeExtra = '( in <b style="color:red">' + timeExtra + "</b> )";
+            }
+
+            info.time =
+              startAt.toTimeString().slice(0, -2) +
+              " - " +
+              endAt.toTimeString() +
+              timeExtra;
+
+            info.lecturer = el.querySelector(".tutor").value;
+            info.room = el.querySelector(".room").value;
+            info.batch = el.querySelector(".batch").value;
+            if (el.querySelector(".link"))
+              info.link = el.querySelector(".link").value;
+            else info.link = "";
+            if (el.classList.contains("ongoing")) info.ongoing = true;
+            else info.ongoing = false;
+
+            info.timeLeft = findCourseNow();
+          });
+        });
+      };
+
+      function findCourseNow() {
+        var startTimes = Array.from(_$("dd .start")).map((el) =>
+          el.getAttribute("datetime")
+        );
+        var endTimes = Array.from(_$("dd .end")).map((el) =>
+          el.getAttribute("datetime")
+        );
+
+        var endTimeSeconds = endTimes.map(
+          (x) => Math.floor(new Date(x).getTime()) / 1000
+        );
+        var startTimeSeconds = startTimes.map(
+          (x) => Math.floor(new Date(x).getTime()) / 1000
+        );
+
+        var currentTime = Math.floor(new Date().getTime()) / 1000;
+
+        const WK = 604800; //seconds in a week
+
+        var durations = endTimeSeconds.map((x, i) => x - startTimeSeconds[i]);
+        var timesLeft = startTimeSeconds.map((x) => mod(x - currentTime, WK));
+
+        var minTimeLeft = Math.min.apply(this, timesLeft);
+        nextClassI = timesLeft.indexOf(minTimeLeft);
+
+        var minHoursLeft = Math.floor(minTimeLeft / 3600);
+        var minMinutesLeft = Math.floor(minTimeLeft / 60);
+
+        var nextClass = _$("dd")[nextClassI].innerText;
+
+        if (minHoursLeft < 3) {
+          var _and = "hours and ";
+          if (minHoursLeft === 0) {
+            _and = "";
+            minHoursLeft = "";
+          }
+          var timeString =
+            minHoursLeft + _and + minMinutesLeft + " minutes until next class";
+          console.log(timeString);
+        }
+
+        return _$("dd .start")[nextClassI].getAttribute("datetime");
+      }
+
+      function updateInfo() {
+        $(".info .time").innerHTML = info.time;
+        $(".info .lecturer").innerHTML = info.lecturer;
+        $(".info .room").innerHTML = info.room;
+        $(".info .batch").innerHTML = info.batch;
+
+        if (info.link !== "") {
+          $(".info .link-url").href = info.link;
+          $(".info .link-url").style.display = "block";
+        } else {
+          $(".info .link-url").style.display = "none";
+        }
+
+        if (info.ongoing) $(".info .table-status").style.display = "block";
+        else $(".info .table-status").style.display = "none";
+      }
+
+      window.setInterval(updateInfo, 300);
+
+      //Prototype modifications
+      Date.prototype.toTimeString = function () {
+        var date = this;
+        var hour = date.getHours() % 12;
+        hour = hour === 0 ? 12 : hour;
+
+        var minute = date.getMinutes();
+        minute = ("0" + minute).slice(-2);
+        var m = date.getHours() >= 12 ? "PM" : "AM";
+
+        var time = hour + ":" + minute + " " + m;
+        return time;
+      };
+      function mod(m, n) {
+        return ((m % n) + n) % n;
+      }
+    </script>
+  </head>
+  <body>
+    <dl>
+      <dt class="Monday">Monday</dt>
+      <dd class="MAT1043 f2f lecture">
+        Linear Algebra
+        <time class="start" datetime="2023-08-28T13:00:00"></time>
+        <time class="end" datetime="2023-08-28T14:50:00"></time>
+        <data class="room" value="LT-48"></data>
+        <data class="tutor" value="Dennis Xavier"></data>
+        <data class="batch" value="UM1"></data>
+      </dd>
+      <dd class="CIT2004 f2f practical">
+        Object Oriented Programming
+        <time class="start" datetime="2023-08-28T18:00:00"></time>
+        <time class="end" datetime="2023-08-28T20:50:00"></time>
+        <data class="room" value="LAB A"></data>
+        <data class="tutor" value="Rorron Clarke"></data>
+        <data class="batch" value="UN2"></data>
+      </dd>
+      <dt class="Tuesday">Tuesday</dt>
+      <dd class="MAT2003 f2f lecture">
+        Calculus 1
+        <time class="start" datetime="2023-08-29T08:00:00"></time>
+        <time class="end" datetime="2023-08-29T09:50:00"></time>
+        <data class="room" value="LT-48"></data>
+        <data class="tutor" value="Biju Tom Manianghattu"></data>
+        <data class="batch" value="UM1"></data>
+      </dd>
+    <dd class="MAT1043 f2f tutorial">
+        Linear Algebra
+        <time class="start" datetime="2023-08-29T11:00:00"></time>
+        <time class="end" datetime="2023-08-29T11:50:00"></time>
+        <data class="room" value="4A-16A"></data>
+        <data class="tutor" value="Tricia Morris"></data>
+        <data class="batch" value="UM1"></data>
+      </dd>
+    <dd class="CIT2004 f2f tutorial">
+        Object Oriented Programming
+        <time class="start" datetime="2023-08-29T18:00:00"></time>
+        <time class="end" datetime="2023-08-29T18:50:00"></time>
+        <data class="room" value="2B-6"></data>
+        <data class="tutor" value="Rorron Clarke"></data>
+        <data class="batch" value="UN2"></data>
+      </dd>
+      <dt class="Wednesday">Wednesday</dt>
+      <dd class="COM2016 online lecture">
+        Critical Thinking, Reading and Writing
+        <time class="start" datetime="2023-08-30T09:00:00"></time>
+        <time class="end" datetime="2023-08-30T09:50:00"></time>
+        <data class="room" value="online"></data>
+        <data class="tutor" value="Daidrah Smith"></data>
+        <data class="batch" value="UM2"></data>
+        <data
+          class="link"
+          value="about:blank"
+        ></data>
+      </dd>
+      <dd class="CIT2004 online lecture">
+        Object Oriented Programming
+        <time class="start" datetime="2023-08-30T12:00:00"></time>
+        <time class="end" datetime="2023-08-30T13:50:00"></time>
+        <data class="room" value="online"></data>
+        <data class="tutor" value="Rorron Clarke"></data>
+        <data class="batch" value="UN2"></data>
+        <data
+          class="link"
+          value="about:blank"
+        ></data>
+      </dd>
+    <dd class="CSP1001 online">
+        Community Service Project
+        <time class="start" datetime="2023-08-30T18:00:00"></time>
+        <time class="end" datetime="2023-08-30T18:50:00"></time>
+        <data class="room" value="online"></data>
+        <data class="tutor" value="Abdul Antoine"></data>
+        <data class="batch" value="UN2"></data>
+        <data
+          class="link"
+          value="about:blank"
+        ></data>
+      </dd>
+      <dt class="Thursday">Thursday</dt>
+      <dd class="COM2016 online tutorial">
+        Critical Thinking, Reading and Writing
+        <time class="start" datetime="2023-08-31T10:00:00"></time>
+        <time class="end" datetime="2023-08-31T11:50:00"></time>
+        <data class="room" value="8A-4W"></data>
+        <data class="tutor" value="Quinton Yearde"></data>
+        <data class="batch" value="UM2"></data>
+      </dd>
+    <dd class="MAT2003 f2f lecture">
+        Calculus 1
+        <time class="start" datetime="2023-08-31T12:00:00"></time>
+        <time class="end" datetime="2023-08-31T12:50:00"></time>
+        <data class="room" value=""></data>
+        <data class="tutor" value=""></data>
+        <data class="batch" value="UM1"></data>
+      </dd>
+      <dt class="Friday" style="display:none">Friday</dt>
+    </dl>
+
+    <table class="info">
+      <tr>
+        <td class="label">Time:</td>
+        <td class="time">2:00-3:30PM</td>
+      </tr>
+      <tr>
+        <td class="label">Lecturer:</td>
+        <td class="lecturer">John Brown</td>
+      </tr>
+      <tr>
+        <td class="label">Room:</td>
+        <td class="room">2B-5</td>
+      </tr>
+      <tr>
+        <td class="label">Batch:</td>
+        <td class="batch">UE4</td>
+      </tr>
+      <tr class="table-status">
+        <td>&#128994;</td>
+        <td class="ongoing">Ongoing</td>
+      </tr>
+      <tr>
+        <td><a class="link-url">🔗</a></td>
+      </tr>
+    </table>
+  </body>
+</html>
