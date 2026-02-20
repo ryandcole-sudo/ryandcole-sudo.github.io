@@ -32,9 +32,26 @@
 
     self.addEventListener('fetch', event => {
       event.respondWith(
-        caches.match(event.request, {ignoreSearch: true})
+        caches.match(normalizeURL(event.request), {ignoreSearch: true})
           .then(response => {
             return response || fetch(event.request); // Serve from cache or fetch from network
           })
       );
     });
+
+
+ function normalizeURL(request) {
+  const url = new URL(request.url);
+
+  // Only handle same-origin requests
+  if (url.origin !== location.origin) {
+    return request;
+  }
+
+  // Remove query string
+  url.search = '';
+
+  // Normalize trailing slash (remove it unless root)
+  if (url.pathname.endsWith('/') && url.pathname !== '/') {
+    url.pathname = url.pathname.slice(0, -1);
+  }
