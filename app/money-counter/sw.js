@@ -3,7 +3,7 @@
         caches.open('my-app-cache-v1') // Define a cache name
           .then(cache => {
             return cache.addAll([
-              '/app/money-counter/',
+              '/app/money-counter',
               'assets/jamaica_money/1.png',
               'assets/jamaica_money/5.png',
               'assets/jamaica_money/10.png',
