@@ -3,7 +3,7 @@
         caches.open('my-app-cache-v1') // Define a cache name
           .then(cache => {
             return cache.addAll([
-              '/app/money-counter',
+              '/app/money-counter/',
               'assets/jamaica_money/1.png',
               'assets/jamaica_money/5.png',
               'assets/jamaica_money/10.png',
@@ -32,8 +32,9 @@
 
     self.addEventListener('fetch', event => {
       event.respondWith(
-        caches.match(normalizeURL(event.request), {ignoreSearch: true})
+        caches.match(event.request, {ignoreSearch: true})
           .then(response => {
+            console.log("response:",response);
             return response || fetch(event.request); // Serve from cache or fetch from network
           })
       );
