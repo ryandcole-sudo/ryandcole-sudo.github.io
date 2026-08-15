@@ -1,0 +1,498 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,minimum-scale=1"><meta name=author content="Ryan Cole"><script type=text/javascript src=../umbrella.min.js></script>
+<script type=text/javascript src=../main.js></script>
+<link rel=stylesheet href=../katex/katex.min.css><script defer src=../katex/katex.min.js></script>
+<script defer src=../katex/auto-render.min.js id=katex-script></script>
+<script>u("#katex-script").on("load",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}]})})</script><title>Accuracy of an Epicycle Model for Predicting Eclipses | Ryan Cole Blog</title><link rel=stylesheet href=../css/style.css type=text/css media=all></head><body><header><div class=header-content><a href=index.html class=logo>Ryan Cole</a><header class=site-header><nav class=site-nav><a class=logo href=https://ryandcole.us.to/blog/>Ryan Cole Blog</a><ul class=main-menu></ul></nav></header></div></header><nav id=TableOfContents><ul><li><a href=#how-to-determine-the-parameters-for-the-model>How to Determine the Parameters for the Model</a></li><li><a href=#predicting-lunar-eclipses>Predicting Lunar Eclipses</a></li><li><a href=#predicting-solar-eclipses>Predicting Solar Eclipses</a></li></ul></nav><main><div class=blog-header id=top><h1>Accuracy of an Epicycle Model for Predicting Eclipses</h1><div class=blog-meta><span>📅 Published: August 13, 2024</span>
+<span>⏱️ 25 min read</span>
+<span>👤 Ryan Cole</span></div></div><article class=article-content><p>One of the first geometric models for predicting the motion of the sun and moon was devised by Hipparchus over 2000 years ago (in 150 BC). In this model, the moon moves on a small circle called the epicycle, and this epicycle moves on a larger circle called the deferent. Both these motions are uniform. The main reason for introducing this model was to explain the non-uniform motion of the that was observed. The ancient Babylonian astronomers observed that the moon was sometimes faster in its orbit. Indeed, this has effect of making the length of a synodic month variable. In the <a href=../periods-moon-orbit/>previous article</a>, I looked at how the Babylonians deduced this, and also how they calculated the length of a month.</p><p>When the moon moves forwards on its epicycle, it appears to accelerate, and in the opposite direction it appears to decelerate. The mean speed is represented by the motion of the center of the epicycle on the deferent. The point on the epicycle, where the moon is closer to the Earth, is called <em>perigee</em>. And the point, where the moon is farther away, is called the <em>apogee</em>. In Hipparchus&rsquo; model, the moon moves forwards when at perigee, and backwards at apogee. This makes the moon slower at apogee and faster at perigee.</p><p>In addition to the epicycle, astronomers were also aware that the path of the moon and the sun were not exactly the same in the sky but were inclined at a small angle. The two points where the moon intersects the sun&rsquo;s path in the sky are called the <em>nodes</em>. At one node, when the moon crosses, it goes further northwards, this is called the <em>ascending node</em>. The other node where the moon moves southwards, is called the <em>descending node</em>. These nodes are not fixed but were observed to move in the opposite direction to the moon&rsquo;s motion at a rate which Hipparchus and others judged to be uniform.</p><p>This mechanism allowed astronomers to explain eclipses, as eclipses can only occur when the moon crosses the path of the sun at one of the nodes. The addition of the epicycle to account for the moon&rsquo;s variable speed allowed Hipparchus to predict the time for when an eclipse would occur, as well as to determine how much of the moon or sun is eclipsed. My goal in this article is to determine how accurate this epicycle model is in predicting eclipses, using the best modern values for the parameters.</p><h2 id=how-to-determine-the-parameters-for-the-model>How to Determine the Parameters for the Model</h2><p>Hipparchus had found a way to geometrically determine the size of the epicycle for the sun and moon, using just three observations. For the sun, these observations are taken to be the equinoxes and solstices (or equivalently the length of the seasons). For the moon, these observations are taken at lunar eclipses, where the sun is opposite the moon, and therefore the position of the sun allows us to locate the position of the moon.</p><p>The details of the method used by Hipparchus can be found in a paper by Duke <sup id=fnref:1><a href=#fn:1 class=footnote-ref role=doc-noteref>1</a></sup>. I have written the following program in python to implement the procedure:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Hipparchus&#39; method</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>from</span> math <span style=color:#ff79c6>import</span> <span style=color:#ff79c6>*</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>def</span> <span style=color:#50fa7b>angle</span>(x):
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>return</span> x<span style=color:#ff79c6>%</span><span style=color:#bd93f9>360</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Input the values</span>
+</span></span><span style=display:flex><span>T <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Enter the period of orbit (true):&#34;</span>))
+</span></span><span style=display:flex><span>T_a <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Enter the period of orbit (anomaly):&#34;</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>l1 <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;long. of Observation 1:&#34;</span>))
+</span></span><span style=display:flex><span>t1 <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;time of Observation 1:&#34;</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>l2 <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;long. of Observation 2:&#34;</span>))
+</span></span><span style=display:flex><span>t2 <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;time of Observation 2:&#34;</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>l3 <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;long. of Observation 3:&#34;</span>))
+</span></span><span style=display:flex><span>t3 <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;time of Observation 3:&#34;</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>w <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span> <span style=color:#ff79c6>/</span> T  <span style=color:#6272a4># Mean Angular Speed</span>
+</span></span><span style=display:flex><span>w_a <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>T_a 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>w_d <span style=color:#ff79c6>=</span> w <span style=color:#ff79c6>-</span> w_a <span style=color:#6272a4>#Difference in angular speed</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Convert the angles to radians</span>
+</span></span><span style=display:flex><span>l1 <span style=color:#ff79c6>=</span> radians(l1)
+</span></span><span style=display:flex><span>l2 <span style=color:#ff79c6>=</span> radians(l2)
+</span></span><span style=display:flex><span>l3 <span style=color:#ff79c6>=</span> radians(l3)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>w <span style=color:#ff79c6>=</span> radians(w)
+</span></span><span style=display:flex><span>w_d <span style=color:#ff79c6>=</span> radians(w_d)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Mean motion of the apogee</span>
+</span></span><span style=display:flex><span>p <span style=color:#ff79c6>=</span> w_d<span style=color:#ff79c6>*</span>(t2 <span style=color:#ff79c6>-</span> t1)
+</span></span><span style=display:flex><span>q <span style=color:#ff79c6>=</span> w_d<span style=color:#ff79c6>*</span>(t3 <span style=color:#ff79c6>-</span> t2)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Mean Angles, from the center of the deferent</span>
+</span></span><span style=display:flex><span>a <span style=color:#ff79c6>=</span> w <span style=color:#ff79c6>*</span> (t2 <span style=color:#ff79c6>-</span> t1) <span style=color:#ff79c6>-</span> p
+</span></span><span style=display:flex><span>b <span style=color:#ff79c6>=</span> w <span style=color:#ff79c6>*</span> (t3 <span style=color:#ff79c6>-</span> t2) <span style=color:#ff79c6>-</span> q
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Longitude, angles from the observer</span>
+</span></span><span style=display:flex><span>g <span style=color:#ff79c6>=</span> l2 <span style=color:#ff79c6>-</span> l1 <span style=color:#ff79c6>-</span> p
+</span></span><span style=display:flex><span>d <span style=color:#ff79c6>=</span> l3 <span style=color:#ff79c6>-</span> l2 <span style=color:#ff79c6>-</span> q
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Solve the trigonometric problem</span>
+</span></span><span style=display:flex><span>y <span style=color:#ff79c6>=</span> sin(d) <span style=color:#ff79c6>*</span> sin(a <span style=color:#ff79c6>-</span> g) <span style=color:#ff79c6>-</span> sin(g) <span style=color:#ff79c6>*</span> sin(b <span style=color:#ff79c6>-</span> d)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>x <span style=color:#ff79c6>=</span> sin(a <span style=color:#ff79c6>+</span> b <span style=color:#ff79c6>-</span> g <span style=color:#ff79c6>-</span> d) <span style=color:#ff79c6>-</span> cos(g) <span style=color:#ff79c6>*</span> sin(b <span style=color:#ff79c6>-</span> d) <span style=color:#ff79c6>-</span> cos(d) <span style=color:#ff79c6>*</span> sin(a <span style=color:#ff79c6>-</span> g)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>z <span style=color:#ff79c6>=</span> sin(g) <span style=color:#ff79c6>*</span> cos(b <span style=color:#ff79c6>-</span> d) <span style=color:#ff79c6>+</span> sin(d) <span style=color:#ff79c6>*</span> cos(a <span style=color:#ff79c6>-</span> g) <span style=color:#ff79c6>-</span> sin(g <span style=color:#ff79c6>+</span> d)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>p <span style=color:#ff79c6>=</span> atan2(y, x)
+</span></span><span style=display:flex><span>s <span style=color:#ff79c6>=</span> atan2(y, z)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Calculate the radius of the epicycle</span>
+</span></span><span style=display:flex><span>r <span style=color:#ff79c6>=</span> sin(s) <span style=color:#ff79c6>/</span> sin(p)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Convert the angles to degrees</span>
+</span></span><span style=display:flex><span>p <span style=color:#ff79c6>=</span> degrees(p)
+</span></span><span style=display:flex><span>s <span style=color:#ff79c6>=</span> degrees(s)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>phi <span style=color:#ff79c6>=</span> p <span style=color:#ff79c6>+</span> s
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Find the apogee at the second observation</span>
+</span></span><span style=display:flex><span>apo <span style=color:#ff79c6>=</span> angle(degrees(l2) <span style=color:#ff79c6>-</span> p)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>&#34;The radius of the epicycle is:&#34;</span>, r)
+</span></span><span style=display:flex><span><span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>&#34;The apogee is at&#34;</span>, apo)
+</span></span><span style=display:flex><span><span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>&#34;Daily motion of apogee (Apsidal precession):&#34;</span>, degrees(w_d))
+</span></span></code></pre></div><p>For the sun, the input values are the time from vernal equinox to summer solstice (or the length of spring), and the time from summer solstice to autumnal equinox (the length of summer). The values for the longitudes represent the position of the sun at each time. Because of how equinoxes and solstices are defined, these are simply $90\degree$ apart. The time values are given in days. For simplicity, I take the vernal equinox as day 0, and from there use the lengths of the season to determining the other time values. For the length of the seasons, I found the following values from a web search: spring $92.75$ days, summer $93.65$ days. I ran the python program and inputted these values. Note: for the third observation simply add $92.75+93.65=186.4$.</p><div class=terminal><pre> 
+Enter the period of orbit (true):365.25
+Enter the period of orbit (anomaly):365.25
+long. of Observation 1:0
+time of Observation 1:0
+long. of Observation 2:90
+time of Observation 2:92.75
+long. of Observation 3:180
+time of Observation 3:186.4
+The radius of the epicycle is: 0.03337403397527309
+The apogee is at 103.41173814032092
+Daily motion of apogee (Apsidal precession): 0.0
+ </pre></div><p>For an epicycle, the apogee is the point where the sun reaches its furthest point from Earth, and the size of the epicycle is measured relative to a deferent of unit radius. Notice the apogee corresponds to the <em>aphelion</em> in our modern theory. Also notice that the radius of the epicycle is very nearly twice the value of the eccentricity of Earth&rsquo;s orbit $0.03337/2 \approx 0.01669$. So, Hipparchus&rsquo; procedure from 2000 years ago, can give us a reasonably accurate estimate for the elliptical orbit of the Earth.</p><p>Sticking with the epicycle model, our next step is to determine the <em>epoch</em> of the sun. That is, we choose some arbitrary date and time, which will represent our starting position, then determine the exact position of the sun at that time. For my epoch date, I will choose January 1, 2001, at 0:00 UTC. To find the position of the sun at this time, I simply need to find the time between the nearest vernal equinox and the start date of our epoch. For this, I looked up the date of the vernal equinox online and found March 20, 2001, 13:19 UTC to be the closest equinox date. The difference between this equinox and our start date is $78.555$ days. To calculate the <em>mean longitude</em> of the sun (the position of the center of its epicycle), we simply multiply by 360 and divide by the length of the year: $78.555/365.25\times 360 = 77.425$. The result is then subtracted from the position of the vernal equinox $360-77.426 =282.57\degree$. This is the position of the sun at the starting point of our epoch. The angle between this and the apogee is called the <em>mean anomaly</em>. This is $282.57-103.412 = 179.159\degree$. I wrote a simple epoch calculator to find the position</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#6272a4># Epoch Calculator</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>from</span> math <span style=color:#ff79c6>import</span> <span style=color:#ff79c6>*</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>def</span> <span style=color:#50fa7b>mod</span>(a,b): <span style=color:#6272a4>#Works for negative numbers</span>
+</span></span><span style=display:flex><span>	<span style=color:#ff79c6>return</span> a<span style=color:#ff79c6>%</span>b
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>T <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Period of orbit (true):&#34;</span>))
+</span></span><span style=display:flex><span>T_a <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Period of orbit (anomaly):&#34;</span>))
+</span></span><span style=display:flex><span>radius <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Radius of epicycle:&#34;</span>))
+</span></span><span style=display:flex><span>days <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Time of observation since epoch (in days) :&#34;</span>))
+</span></span><span style=display:flex><span>apogee <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Longitude of apogee:&#34;</span>))
+</span></span><span style=display:flex><span>longt <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Longitude of observation:&#34;</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>true_ano <span style=color:#ff79c6>=</span> mod(longt <span style=color:#ff79c6>-</span> apogee,<span style=color:#bd93f9>360</span>) <span style=color:#6272a4>#True Anomaly - Angle between observation and apogee</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#Determine the equation of anomaly (i.e difference between true and mean anomaly) </span>
+</span></span><span style=display:flex><span>x <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>1</span> <span style=color:#ff79c6>+</span> radius<span style=color:#ff79c6>*</span>cos(radians(true_ano))
+</span></span><span style=display:flex><span>y <span style=color:#ff79c6>=</span> radius<span style=color:#ff79c6>*</span>sin(radians(true_ano))
+</span></span><span style=display:flex><span>eq <span style=color:#ff79c6>=</span> degrees(atan(y<span style=color:#ff79c6>/</span>x))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>mean_ano <span style=color:#ff79c6>=</span> mod(true_ano <span style=color:#ff79c6>+</span> eq,<span style=color:#bd93f9>360</span>) <span style=color:#6272a4>#Mean anomaly - difference between mean position or apogee</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>longm <span style=color:#ff79c6>=</span> mod(mean_ano <span style=color:#ff79c6>+</span> apogee,<span style=color:#bd93f9>360</span>) <span style=color:#6272a4>#Mean longitude of observation</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#Mean longitude of epoch</span>
+</span></span><span style=display:flex><span>longm_ep <span style=color:#ff79c6>=</span> mod(longm <span style=color:#ff79c6>-</span> (days<span style=color:#ff79c6>/</span>T)<span style=color:#ff79c6>*</span><span style=color:#bd93f9>360</span>,<span style=color:#bd93f9>360</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#Mean anomaly of epoch</span>
+</span></span><span style=display:flex><span>mean_ano_ep <span style=color:#ff79c6>=</span> mod(longm_ep <span style=color:#ff79c6>-</span> apogee,<span style=color:#bd93f9>360</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Equation of anomaly (at epoch)</span>
+</span></span><span style=display:flex><span>x <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>1</span> <span style=color:#ff79c6>+</span> radius<span style=color:#ff79c6>*</span>cos(radians(mean_ano_ep))
+</span></span><span style=display:flex><span>y <span style=color:#ff79c6>=</span> radius<span style=color:#ff79c6>*</span>sin(radians(mean_ano_ep))
+</span></span><span style=display:flex><span>eq <span style=color:#ff79c6>=</span> degrees(atan(y<span style=color:#ff79c6>/</span>x))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#True anomaly at epoch</span>
+</span></span><span style=display:flex><span>ano_ep <span style=color:#ff79c6>=</span> mod(mean_ano_ep <span style=color:#ff79c6>-</span> eq,<span style=color:#bd93f9>360</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#Longitude of epoch</span>
+</span></span><span style=display:flex><span>long_epoch <span style=color:#ff79c6>=</span> mod(ano_ep <span style=color:#ff79c6>+</span> apogee,<span style=color:#bd93f9>360</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#Motion of the apogee</span>
+</span></span><span style=display:flex><span>w_d <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>T <span style=color:#ff79c6>-</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>T_a
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>apogee_ep <span style=color:#ff79c6>=</span> apogee <span style=color:#ff79c6>-</span> w_d<span style=color:#ff79c6>*</span>days 
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>f</span><span style=color:#f1fa8c>&#34;Mean longitude at epoch:</span><span style=color:#f1fa8c>{</span>longm_ep<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>f</span><span style=color:#f1fa8c>&#34;Longitude at epoch:</span><span style=color:#f1fa8c>{</span>long_epoch<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>&#34;</span>)
+</span></span><span style=display:flex><span><span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>f</span><span style=color:#f1fa8c>&#34;Longitude of apogee at epoch:</span><span style=color:#f1fa8c>{</span>apogee_ep<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>&#34;</span>)
+</span></span></code></pre></div><p>The following is the result of running the program for the sun:<div class=terminal><pre> 
+Period of orbit (true):365.25
+Period of orbit (anomaly):365.25
+Radius of epicycle:0.0334
+Time of observation since epoch (in days) :78.555
+Longitude of apogee:103.41
+Longitude of observation:0
+Mean longitude at epoch:280.69876207754385
+Longitude at epoch:280.60511633619694
+Longitude of apogee at epoch:103.41
+ </pre></div></p><p>To continue on to the next step, I have written a generic epicycle calculator in python:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Epicycle Calculator</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>from</span> math <span style=color:#ff79c6>import</span> <span style=color:#ff79c6>*</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>def</span> <span style=color:#50fa7b>angle</span>(a):
+</span></span><span style=display:flex><span>	<span style=color:#ff79c6>return</span> a<span style=color:#ff79c6>%</span><span style=color:#bd93f9>360</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>T <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Enter period of orbit (true):&#34;</span>))
+</span></span><span style=display:flex><span>T_a <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Enter period of orbit (anomaly):&#34;</span>))
+</span></span><span style=display:flex><span>radius <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;radius:&#34;</span>))
+</span></span><span style=display:flex><span>epoch <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Mean Longitude at epoch:&#34;</span>))
+</span></span><span style=display:flex><span>apogee_ep <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;Longitude of apogee at epoch:&#34;</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>while</span> <span style=color:#ff79c6>True</span>: <span style=color:#6272a4>#Repeat</span>
+</span></span><span style=display:flex><span>	days <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>float</span>(<span style=color:#8be9fd;font-style:italic>input</span>(<span style=color:#f1fa8c>&#34;</span><span style=color:#f1fa8c>\n</span><span style=color:#f1fa8c>Time of observation (days since epoch):&#34;</span>))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4>#Motion of the apogee</span>
+</span></span><span style=display:flex><span>    w_d <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>T <span style=color:#ff79c6>-</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>T_a
+</span></span><span style=display:flex><span>    apogee <span style=color:#ff79c6>=</span> apogee_ep <span style=color:#ff79c6>+</span> w_d<span style=color:#ff79c6>*</span>days
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>	mean_long <span style=color:#ff79c6>=</span> epoch <span style=color:#ff79c6>+</span> days<span style=color:#ff79c6>/</span>T<span style=color:#ff79c6>*</span><span style=color:#bd93f9>360</span>
+</span></span><span style=display:flex><span>	mean_long <span style=color:#ff79c6>=</span> angle(mean_long)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>f</span><span style=color:#f1fa8c>&#34;Mean Longitude:</span><span style=color:#f1fa8c>{</span>mean_long<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	epi_ano <span style=color:#ff79c6>=</span> mean_long <span style=color:#ff79c6>-</span> apogee
+</span></span><span style=display:flex><span>	<span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>f</span><span style=color:#f1fa8c>&#34;Epicyclic anomaly:</span><span style=color:#f1fa8c>{</span>epi_ano<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	x <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>1</span> <span style=color:#ff79c6>+</span> radius<span style=color:#ff79c6>*</span>cos(radians(epi_ano))
+</span></span><span style=display:flex><span>	y <span style=color:#ff79c6>=</span> radius<span style=color:#ff79c6>*</span>sin(radians(epi_ano))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#6272a4>#Equation of anomaly (i.e difference between them)</span>
+</span></span><span style=display:flex><span>	eq <span style=color:#ff79c6>=</span> degrees(atan(y<span style=color:#ff79c6>/</span>x))
+</span></span><span style=display:flex><span>	
+</span></span><span style=display:flex><span>	<span style=color:#6272a4>#True anomaly</span>
+</span></span><span style=display:flex><span>	ano <span style=color:#ff79c6>=</span> angle(epi_ano <span style=color:#ff79c6>-</span> eq)
+</span></span><span style=display:flex><span>	<span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>f</span><span style=color:#f1fa8c>&#34;True Anomaly:</span><span style=color:#f1fa8c>{</span>ano<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>	<span style=color:#6272a4>#True longitude</span>
+</span></span><span style=display:flex><span>	longt <span style=color:#ff79c6>=</span> angle(ano <span style=color:#ff79c6>+</span> apogee)
+</span></span><span style=display:flex><span>	<span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>f</span><span style=color:#f1fa8c>&#34;Longitude:</span><span style=color:#f1fa8c>{</span>longt<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>&#34;</span>)
+</span></span></code></pre></div><p>With the parameters for the sun now established, the next step is to determine the parameters for the moon. We proceed by finding three lunar eclipses and determining the time of mid-eclipse for each. At this time, the moon and the sun are $180\degree$ apart in longitude. So, we find the exact position of the moon by finding the position of the sun and reflecting this by $180\degree$. For data on lunar eclipses, I found three observations close to our epoch from the <a href=https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html>NASA Eclipse Catalogue</a>.</p><p>The following is the list of eclipses:</p><ul><li>The first eclipse was on January 9, 2001, 20:22 UTC. The number of days since the start of our epoch is $8.85$ days.</li><li>The second eclipse was on July 5, 2001, 14:56 UTC. The number of days since the start of our epoch is $185.62$ days</li><li>The third eclipse was on December 30, 2001, 10:30 UTC. The number of days since the start of our epoch is $363.44$ days</li></ul><p>Now we can calculate the position of the sun using our epicycle calculator. The result is as follows:</p><div class=terminal><pre> 
+Enter period of orbit (true) :365.25
+Enter period of orbit (anomaly) :365.25
+radius:0.0334
+Mean Longitude at epoch:280.7
+Longitude of apogee:103.41
+
+Time of observation (days since epoch):8.85
+Mean Longitude:289.4227926078029
+Epicyclic anomaly:186.01279260780288
+True Anomaly:186.2201378195743
+Longitude:289.6301378195743
+
+Time of observation (days since epoch):185.62
+Mean Longitude:103.65195071868584
+Epicyclic anomaly:0.2419507186858425
+True Anomaly:0.23413077261939347
+Longitude:103.64413077261939
+
+Time of observation (days since epoch):363.44
+Mean Longitude:278.91601642710475
+Epicyclic anomaly:175.50601642710475
+True Anomaly:175.35090686500425
+Longitude:278.76090686500424
+
+Time of observation (days since epoch): &#3;
+ </pre></div><p>From the values, we see that the longitude of the sun at each eclipse are given as $289.63\degree$, $103.64\degree$ and $278.76\degree$. To find the position of the moon, we simply need to flip these values $180\degree$; we can either add or subtract $180\degree$.</p><p>So, the longitude of the moon at each eclipse is: $109.63\degree$, $283.64$ and $98.76\degree$. We can now input these values into our Hipparchus&rsquo; method calculator from earlier to obtain the parameters for the moon. The results are as follows:<div class=terminal><pre> 
+Enter the period of orbit (true):27.3216
+Enter the period of orbit (anomaly):27.5546
+long. of Observation 1:109.63
+time of Observation 1:8.85
+long. of Observation 2:283.64
+time of Observation 2:185.62
+long. of Observation 3:98.76
+time of Observation 3:363.44
+The radius of the epicycle is: 0.08573619368442606
+The apogee is at 326.67908028855817
+Daily motion of apogee (Apsidal precession): 0.11141872441248958
+ </pre></div></p><p>Now our final step is to determine the epoch of the moon, using our epoch calculator. For this I will use the second observation, since the longitude of apogee calculated from our program is based on this value. The result for our epoch is:</p><div class=terminal><pre> 
+Period of orbit (true):27.3216
+Period of orbit (anomaly):27.5546
+Radius of epicycle:0.086
+Time of observation since epoch (in days) :185.62
+Longitude of apogee:326.68
+Longitude of observation:283.64
+Mean longitude at epoch:354.67795053849795
+Longitude at epoch:352.5290740672692
+Longitude of apogee at epoch:305.9984563745537
+ </pre></div><h2 id=predicting-lunar-eclipses>Predicting Lunar Eclipses</h2><p>There are two conditions required for an eclipse to occur:</p><ul><li>The angle between the sun and the moon&mdash;referred to as the <em>elongation</em>&mdash;must be either $0\degree$ or $180\degree$. If the elongation is $0\degree$, then the eclipse is a solar eclipse. And if the elongation is $180\degree$, the eclipse is a lunar eclipse.</li><li>The sun must be sufficiently close to one of the <em>nodes</em>. These are the two points where the moon&rsquo;s orbit intersects the path of the sun. The angle between the node, required for an eclipse to occur, is referred to as an <em>ecliptic limit</em>.<ul><li>For a lunar eclipse, the limit is $18\degree$ for penumbral, $12\degree$ for partial and $5\degree$ for total.</li><li>For a solar eclipse, the limits are $18\degree$ for partial, and $11\degree$ for total or annular.</li></ul></li></ul><p>These values can vary based on the distance to the moon.</p><p>Another aspect of eclipse prediction is the <em>magnitude</em> of the eclipse, which refers to the fraction of the moon or sun that is covered. The closer the sun is to the node, the greater the magnitude of the eclipse. The magnitude is also affected by the relative sizes of the eclipsed body and the eclipsing body. The sun and moon have approximately the same angular diameter ($0.5 \degree$), and the size of the earth&rsquo;s shadow on the moon is approximately $2.5$ times the diameter of the moon ( $1.25\degree$).</p><p>We have the following formula for determining the magnitude of an eclipse. $R_S$ is the smaller of the radius (i.e. half the angular diameter), $R_L$ is the larger radius, and $d$ is the distance between the centers.
+$$M = \frac{R_L + R_S - d}{2R_S}$$</p><p>Before predicting eclipses, there is one final parameter we must determine: the position of the lunar nodes at epoch. For this we will need an eclipse of known magnitude, from which we will calculate the angle from the node. We consult the <a href=https://eclipse.gsfc.nasa.gov/LEcat5/LE2001-2100.html>NASA Eclipse Catalogue</a>. For this we will select the second eclipse, which occurred on July 5, 2001, because this is a partial eclipse. The magnitude of the eclipse is given as $0.4947$. From this we can calculate the distance between the center of the moon, and the center of the Earth&rsquo;s shadow.
+$$0.4947 = =\frac{0.625+0.25 - d}{2\times0.25}$$</p><p>From which we get $d=0.627$</p><p>Now this distance represents the latitude of the moon.
+$\sin(0.627) = \sin(5)\times\sin(\varphi_L)$</p><p>We get the angle of the observation from the nodes as $\varphi_L = 7.2\degree$.</p><p>From observation, the shadow covers the northern half of the moon&rsquo;s disk. This mean&rsquo;s the moon&rsquo;s latitude is southerly. And since the eclipse occurs at a descending node, this means that it is heading south. We can therefore say that the moon is ahead of the node. And thus, we subtract $7.2$ from the longitude of the moon to determine the position of the descending node. Now earlier, we had determined the longitude of the moon at this eclipse to be $283.64\degree$. And so the longitude of the descending node is $276.44\degree$. And if we prefer, we can take the ascending node, which is $276.44-180=96.44\degree$.</p><p>We can reduce these values to epoch by using the value for the <em>draconic month</em>, which is $27.212$ days, and the time of our observation from epoch:</p><p>$$ 276.44 - \left(\frac{360}{27.321} - \frac{360}{27.212} \right)\times 185.62 = 284.65\degree$$.</p><p>So, at the time of our epoch, the longitude of the descending node is $284.65\degree$ and the longitude of the ascending node is $96.64\degree$.</p><p>Now that we have determined all the parameters for the sun and the moon, the next step is to predict the eclipses. The following is a simple algorithm for predicting lunar eclipses:</p><ul><li>Start with the known parameters for the sun and moon at some initial time, such as our epoch.</li><li>Determine the difference between the longitude of the sun and moon; this is the elongation. If the elongation is $180\degree$, then we already have a full moon. Otherwise, we add the difference to the mean position of the moon. This will bring us close to a full moon, but not exactly, because the moon must also have moved on its epicycle. But in that case, we just add the difference again until the elongation is close enough to $180\degree$, then we have a full moon.</li><li>After we have determined the time of full moon, we then find the difference between moon&rsquo;s longitude and the nearest node; this is the <em>argument of latitude</em>. We can quickly tell if the eclipse is total or partial by the value of the argument of latitude. If it is less than $12\degree$ we have a partial eclipse. If it is less than $5\degree$, we have a total eclipse, and if it is greater than $18\degree$, no eclipse. We can also compute the magnitude of the eclipse.</li><li>We can then progress the moon&rsquo;s position forward $360\degree$ and repeat the procedure to predict the next eclipse. And we can even go backwards to determine past eclipses, before our epoch date.</li></ul><p>I wrote the following code in python to predict lunar eclipses:</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#6272a4># Lunar Eclipse Prediction</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>from</span> math <span style=color:#ff79c6>import</span> <span style=color:#ff79c6>*</span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>from</span> datetime <span style=color:#ff79c6>import</span> datetime, date, timedelta
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>def</span> <span style=color:#50fa7b>angle</span>(x):
+</span></span><span style=display:flex><span>        <span style=color:#ff79c6>return</span> x<span style=color:#ff79c6>%</span><span style=color:#bd93f9>360</span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>def</span> <span style=color:#50fa7b>angle_diff</span>(x,y):
+</span></span><span style=display:flex><span>    diff <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>abs</span>(x <span style=color:#ff79c6>-</span> y) <span style=color:#ff79c6>%</span><span style=color:#bd93f9>360</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>return</span> <span style=color:#8be9fd;font-style:italic>min</span>(diff, <span style=color:#bd93f9>360</span> <span style=color:#ff79c6>-</span> diff)
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span><span style=color:#6272a4>#Parameters for the sun</span>
+</span></span><span style=display:flex><span>sun_r <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>0.033</span> <span style=color:#6272a4>#Radius of epicycle</span>
+</span></span><span style=display:flex><span>sun_T <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>365.25</span> <span style=color:#6272a4># Orbital period</span>
+</span></span><span style=display:flex><span>sun_Ta <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>365.25</span> <span style=color:#6272a4># Period of anomaly</span>
+</span></span><span style=display:flex><span>sun_w <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>sun_T
+</span></span><span style=display:flex><span>sun_wa <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>sun_Ta
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Epoch positions for the sun</span>
+</span></span><span style=display:flex><span>sun_lm_ep <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>280.6</span>  <span style=color:#6272a4>#Mean Longitude</span>
+</span></span><span style=display:flex><span>sun_apo_ep <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>103.41</span> <span style=color:#6272a4>#  Apogee</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#Parameters for the moon</span>
+</span></span><span style=display:flex><span>moon_r <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>0.086</span> <span style=color:#6272a4>#Radius of epicycle</span>
+</span></span><span style=display:flex><span>moon_T <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>27.321582</span> <span style=color:#6272a4>#Orbital period</span>
+</span></span><span style=display:flex><span>moon_Ta <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>27.554550</span> <span style=color:#6272a4>#Period of anomaly</span>
+</span></span><span style=display:flex><span>moon_Td <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>27.212221</span> <span style=color:#6272a4># Period of latitude (draconic month)</span>
+</span></span><span style=display:flex><span>moon_w <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>moon_T
+</span></span><span style=display:flex><span>moon_wa <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>moon_Ta
+</span></span><span style=display:flex><span>moon_wd <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>moon_Td
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#Epoch positions for the moon</span>
+</span></span><span style=display:flex><span>moon_lm_ep <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>354.67</span> <span style=color:#6272a4>#Mean longitude</span>
+</span></span><span style=display:flex><span>moon_apo_ep <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>306</span> <span style=color:#6272a4>#Apogee</span>
+</span></span><span style=display:flex><span>dnode_ep <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>284.65</span> <span style=color:#6272a4>#Longitude of descending node</span>
+</span></span><span style=display:flex><span>moon_i <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>5</span> <span style=color:#6272a4>#Orbital inclination of the moon</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Corrections</span>
+</span></span><span style=display:flex><span>dnode_ep <span style=color:#ff79c6>+=</span> <span style=color:#bd93f9>1.5532</span>
+</span></span><span style=display:flex><span>moon_lm_ep <span style=color:#ff79c6>-=</span> <span style=color:#bd93f9>0.227</span>
+</span></span><span style=display:flex><span>sun_lm_ep <span style=color:#ff79c6>+=</span> <span style=color:#bd93f9>0.05</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#moon_apo_ep  +=  8.5</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#Copied from our epicycle calculator and modified</span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>def</span> <span style=color:#50fa7b>epi_calc</span>(T,T_a,radius,epoch,apogee_ep,days):
+</span></span><span style=display:flex><span>    w_d <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>T <span style=color:#ff79c6>-</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>T_a
+</span></span><span style=display:flex><span>    apogee <span style=color:#ff79c6>=</span> apogee_ep <span style=color:#ff79c6>+</span> w_d<span style=color:#ff79c6>*</span>days
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    mean_long <span style=color:#ff79c6>=</span> epoch <span style=color:#ff79c6>+</span> days<span style=color:#ff79c6>/</span>T<span style=color:#ff79c6>*</span><span style=color:#bd93f9>360</span>
+</span></span><span style=display:flex><span>    mean_long <span style=color:#ff79c6>=</span> angle(mean_long)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    epi_ano <span style=color:#ff79c6>=</span> mean_long <span style=color:#ff79c6>-</span> apogee
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    x <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>1</span> <span style=color:#ff79c6>+</span> radius<span style=color:#ff79c6>*</span>cos(radians(epi_ano))
+</span></span><span style=display:flex><span>    y <span style=color:#ff79c6>=</span> radius<span style=color:#ff79c6>*</span>sin(radians(epi_ano))
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    eq <span style=color:#ff79c6>=</span> degrees(atan(y<span style=color:#ff79c6>/</span>x))
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    ano <span style=color:#ff79c6>=</span> angle(epi_ano <span style=color:#ff79c6>-</span> eq)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    longt <span style=color:#ff79c6>=</span> angle(ano <span style=color:#ff79c6>+</span> apogee)
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>return</span> longt
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Calculate the date in a printable format</span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>def</span> <span style=color:#50fa7b>calc_datetime</span>(days):
+</span></span><span style=display:flex><span>    epoch <span style=color:#ff79c6>=</span> datetime<span style=color:#ff79c6>.</span>strptime(<span style=color:#f1fa8c>&#34;2001-01-01 00:00:00&#34;</span>,<span style=color:#f1fa8c>&#34;%Y-%m-</span><span style=color:#f1fa8c>%d</span><span style=color:#f1fa8c> %H:%M:%S&#34;</span>)
+</span></span><span style=display:flex><span>    epoch <span style=color:#ff79c6>+=</span> timedelta(days)
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>return</span> epoch
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4>#Find the exact time of the full moon</span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>def</span> <span style=color:#50fa7b>find_moon</span>(n):
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># n is the lunation number, i.e the number of full moons</span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># since epoch.</span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Negative values of n give eclipses before epoch.</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Point opposite the moon</span>
+</span></span><span style=display:flex><span>    opp_lm_ep <span style=color:#ff79c6>=</span> angle(moon_lm_ep <span style=color:#ff79c6>-</span> <span style=color:#bd93f9>180</span>)
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#6272a4>#Determine the angle reuired to reach opposite the moon</span>
+</span></span><span style=display:flex><span>    elong_m <span style=color:#ff79c6>=</span> angle(sun_lm_ep <span style=color:#ff79c6>-</span> opp_lm_ep)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Difference in speed between sun and moon</span>
+</span></span><span style=display:flex><span>    w_e <span style=color:#ff79c6>=</span> moon_w <span style=color:#ff79c6>-</span> sun_w
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    T_syn <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>w_e <span style=color:#6272a4># Synodic month (approx 29.5)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4>#Calculate the number of days to the nth mean full moon</span>
+</span></span><span style=display:flex><span>    days_m <span style=color:#ff79c6>=</span> T_syn <span style=color:#ff79c6>*</span> n <span style=color:#ff79c6>+</span>  elong_m<span style=color:#ff79c6>/</span>w_e
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Repeat until the angle between sun and moon is sufficiently close to 180</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>for</span> i <span style=color:#ff79c6>in</span> <span style=color:#8be9fd;font-style:italic>range</span>(<span style=color:#bd93f9>5</span>):
+</span></span><span style=display:flex><span>        <span style=color:#6272a4>#Calculate the mean longitude for the sun and moon</span>
+</span></span><span style=display:flex><span>        moon_lm <span style=color:#ff79c6>=</span> angle(moon_lm_ep <span style=color:#ff79c6>+</span> moon_w <span style=color:#ff79c6>*</span> days_m)
+</span></span><span style=display:flex><span>        sun_lm <span style=color:#ff79c6>=</span> angle(sun_lm_ep <span style=color:#ff79c6>+</span> sun_w <span style=color:#ff79c6>*</span>  days_m)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#6272a4># Calculate the true longitude for the sun and moon</span>
+</span></span><span style=display:flex><span>        moon_lt <span style=color:#ff79c6>=</span> epi_calc(moon_T, moon_Ta, moon_r,  moon_lm_ep, moon_apo_ep, days_m)
+</span></span><span style=display:flex><span>        sun_lt <span style=color:#ff79c6>=</span> epi_calc(sun_T, sun_Ta, sun_r, sun_lm_ep, sun_apo_ep, days_m)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#6272a4>#Point opposite the moon</span>
+</span></span><span style=display:flex><span>        opp_lt <span style=color:#ff79c6>=</span> angle(moon_lt <span style=color:#ff79c6>-</span> <span style=color:#bd93f9>180</span>)
+</span></span><span style=display:flex><span>        
+</span></span><span style=display:flex><span>        <span style=color:#6272a4># Angle between sun and moon</span>
+</span></span><span style=display:flex><span>        elong_t <span style=color:#ff79c6>=</span> angle(sun_lt <span style=color:#ff79c6>-</span> opp_lt)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        elong_t <span style=color:#ff79c6>=</span> <span style=color:#ff79c6>-</span>(<span style=color:#bd93f9>360</span> <span style=color:#ff79c6>-</span> elong_t) <span style=color:#ff79c6>if</span> elong_t <span style=color:#ff79c6>&gt;</span> <span style=color:#bd93f9>180</span> <span style=color:#ff79c6>else</span> elong_t
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#6272a4># Approximate number of days left for the moon to reach opposite the sun</span>
+</span></span><span style=display:flex><span>        days_x <span style=color:#ff79c6>=</span> elong_t<span style=color:#ff79c6>/</span>w_e
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        days_m <span style=color:#ff79c6>+=</span> days_x
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>return</span> days_m
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#6272a4># Tell whether a given full moon is an ecipse and predict its magnitude</span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>def</span> <span style=color:#50fa7b>predict_eclipse</span>(n):
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#6272a4>#Time of full moon from epoch</span>
+</span></span><span style=display:flex><span>    days <span style=color:#ff79c6>=</span> find_moon(n)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4>#Motion of the node</span>
+</span></span><span style=display:flex><span>    w_d <span style=color:#ff79c6>=</span> (moon_w <span style=color:#ff79c6>-</span> moon_wd)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Calculate the longitude of descending node</span>
+</span></span><span style=display:flex><span>    dnode <span style=color:#ff79c6>=</span> angle(dnode_ep <span style=color:#ff79c6>+</span> w_d <span style=color:#ff79c6>*</span> days)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4>#Ascending node</span>
+</span></span><span style=display:flex><span>    anode <span style=color:#ff79c6>=</span> angle(dnode <span style=color:#ff79c6>-</span> <span style=color:#bd93f9>180</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4>#Calculate the longitude for the sun</span>
+</span></span><span style=display:flex><span>    sun_lt <span style=color:#ff79c6>=</span> epi_calc(sun_T, sun_Ta, sun_r, sun_lm_ep, sun_apo_ep, days)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4>#Calculate the argument of latitude</span>
+</span></span><span style=display:flex><span>    arg_d <span style=color:#ff79c6>=</span> angle_diff(sun_lt , dnode)
+</span></span><span style=display:flex><span>    arg_a <span style=color:#ff79c6>=</span> angle_diff(sun_lt , anode)
+</span></span><span style=display:flex><span>    arg_lat <span style=color:#ff79c6>=</span> <span style=color:#8be9fd;font-style:italic>min</span>(arg_d,arg_a)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Moon Latitude - also distance from center of shadow</span>
+</span></span><span style=display:flex><span>    moon_lat <span style=color:#ff79c6>=</span> degrees(asin(sin(radians(arg_lat))<span style=color:#ff79c6>*</span>sin(radians(moon_i))))
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Eclipse Magnitude</span>
+</span></span><span style=display:flex><span>    Mag <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>2</span><span style=color:#ff79c6>*</span>(<span style=color:#bd93f9>0.875</span> <span style=color:#ff79c6>-</span> moon_lat)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Determine whether there is an eclipse, and type</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>if</span>(arg_lat <span style=color:#ff79c6>&gt;</span> <span style=color:#bd93f9>18</span>):
+</span></span><span style=display:flex><span>        <span style=color:#ff79c6>return</span> <span style=color:#ff79c6>False</span> <span style=color:#6272a4># No eclipse</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    ecl_type <span style=color:#ff79c6>=</span> <span style=color:#f1fa8c>&#34;N&#34;</span> <span style=color:#6272a4>#Default penumbral</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>if</span>(Mag <span style=color:#ff79c6>&gt;</span> <span style=color:#bd93f9>0</span>):
+</span></span><span style=display:flex><span>       ecl_type <span style=color:#ff79c6>=</span> <span style=color:#f1fa8c>&#34;P&#34;</span> <span style=color:#6272a4>#Partial</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>if</span>(Mag <span style=color:#ff79c6>&gt;</span> <span style=color:#bd93f9>1</span>):
+</span></span><span style=display:flex><span>        ecl_type <span style=color:#ff79c6>=</span> <span style=color:#f1fa8c>&#34;T&#34;</span> <span style=color:#6272a4>#Total</span>
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    Lun <span style=color:#ff79c6>=</span> n <span style=color:#ff79c6>+</span> <span style=color:#bd93f9>12</span> <span style=color:#6272a4>#Lunation number, to match the standard epoch (J2000) used by NASA</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    show_date <span style=color:#ff79c6>=</span> calc_datetime(days)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>f</span><span style=color:#f1fa8c>&#34;</span><span style=color:#f1fa8c>{</span>show_date<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>\t</span><span style=color:#f1fa8c>{</span>Lun<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>\t</span><span style=color:#f1fa8c>{</span>Mag<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>\t</span><span style=color:#f1fa8c>{</span>ecl_type<span style=color:#f1fa8c>}</span><span style=color:#f1fa8c>&#34;</span>)
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>return</span> <span style=color:#ff79c6>True</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#8be9fd;font-style:italic>print</span>(<span style=color:#f1fa8c>&#34;Date and Time</span><span style=color:#f1fa8c>\t\t</span><span style=color:#f1fa8c>   Lunation</span><span style=color:#f1fa8c>\t</span><span style=color:#f1fa8c> Magnitude</span><span style=color:#f1fa8c>\t</span><span style=color:#f1fa8c> </span><span style=color:#f1fa8c>\t</span><span style=color:#f1fa8c>Type&#34;</span>)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span><span style=color:#ff79c6>for</span> i <span style=color:#ff79c6>in</span> <span style=color:#8be9fd;font-style:italic>range</span>(<span style=color:#bd93f9>223</span>):
+</span></span><span style=display:flex><span>    predict_eclipse(i)
+</span></span></code></pre></div><p>The following is the result of running our program:</p><div class=terminal><pre> 
+Date and Time              Lunation      Magnitude              Type
+2001-01-09 20:23:33.640631      12      1.0809695425549712      T
+2001-07-05 14:50:43.257775      18      0.4947041996342709      P
+2001-12-30 10:34:10.150156      24      -0.2845878029645501     N
+2002-05-26 11:17:00.870877      29      -0.7024032429161089     N
+2002-06-24 21:14:54.720935      30      -0.9190359275820748     N
+2002-11-20 00:48:22.741719      35      -0.3836926271353569     N
+2003-05-16 03:03:29.463578      41      0.7702240704747019      P
+2003-11-09 00:56:25.261840      47      0.8963103449460311      P
+2004-05-04 20:12:29.122011      53      1.2328396685035106      T
+2004-10-28 03:09:46.188322      59      1.2826309707381098      T
+2005-04-24 09:06:58.265271      65      -0.21292774979164752    N
+2005-10-17 12:00:43.609386      71      -0.09124302054516287    N
+2006-03-14 22:16:01.319825      76      -0.25504311654414025    N
+2006-09-07 19:11:13.121962      82      -0.21257941094613186    N
+2007-03-03 22:32:51.940187      88      1.041565703102378       T
+2007-08-28 10:51:43.503824      94      1.2604580651885184      T
+2008-02-21 02:41:33.456188      100     1.1311343495494386      T
+2008-08-16 20:33:08.502797      106     0.7916847882242458      P
+2009-02-09 13:47:32.099062      112     -0.22875730503424507    N
+2009-07-07 08:43:09.960390      117     -1.0520738917936905     N
+2009-08-05 23:53:08.070463      118     -0.5975521083329518     N
+2009-12-31 19:22:40.714607      123     -0.33516781163293885    N
+2010-06-26 11:14:41.934383      129     0.3296586519817353      P
+2010-12-21 07:57:01.640007      135     1.017702413512806       T
+2011-06-15 19:34:34.753541      141     1.7194986286965974      T
+2011-12-10 13:30:51.507130      147     1.1671098273897351      T
+2012-06-04 10:25:49.077593      153     0.2253696233695679      P
+2012-11-28 13:55:15.569668      159     -0.104286407661633      N
+2013-04-25 19:32:14.266452      164     -0.40544005300912156    N
+2013-05-25 03:54:15.742093      165     -1.2483695255682008     N
+2013-10-18 23:39:14.308246      170     -0.512836398747341      N
+2014-04-15 06:26:54.301449      176     1.0129092116063738      T
+2014-10-08 10:39:50.772621      182     0.8790673519806677      P
+2015-04-04 10:22:36.393058      188     1.1170692993842082      T
+2015-09-28 02:59:50.460096      194     1.1605820624172454      T
+2016-03-23 10:50:14.583030      200     -0.2036310027225292     N
+2016-09-16 19:18:12.422130      206     -0.2974179149950271     N
+2017-02-10 23:41:18.104347      211     -0.3843456973892252     N
+2017-08-07 17:12:29.246199      217     0.02691962948749027     P
+2018-01-31 12:35:10.425051      223     0.979916870079237       P
+2018-07-27 19:24:40.166134      229     1.4246767158897369      T
+ </pre></div><p>The data is also presented in the following table:</p><table><thead><tr><th>Date and Time</th><th>Lunation</th><th>Magnitude</th><th>Type</th></tr></thead><tbody><tr><td>9 January 2001 20:23:33</td><td>12</td><td>1.08097</td><td>T</td></tr><tr><td>5 July 2001 14:50:43</td><td>18</td><td>0.49470</td><td>P</td></tr><tr><td>30 December 2001 10:34:10</td><td>24</td><td>-0.28459</td><td>N</td></tr><tr><td>26 May 2002 11:17:00</td><td>29</td><td>-0.70240</td><td>N</td></tr><tr><td>24 June 2002 21:14:54</td><td>30</td><td>-0.91904</td><td>N</td></tr><tr><td>20 November 2002 00:48:22</td><td>35</td><td>-0.38369</td><td>N</td></tr><tr><td>16 May 2003 03:03:29</td><td>41</td><td>0.77022</td><td>P</td></tr><tr><td>9 November 2003 00:56:25</td><td>47</td><td>0.89631</td><td>P</td></tr><tr><td>4 May 2004 20:12:29</td><td>53</td><td>1.23284</td><td>T</td></tr><tr><td>28 October 2004 03:09:46</td><td>59</td><td>1.28263</td><td>T</td></tr><tr><td>24 April 2005 09:06:58</td><td>65</td><td>-0.21293</td><td>N</td></tr><tr><td>17 October 2005 12:00:43</td><td>71</td><td>-0.09124</td><td>N</td></tr><tr><td>14 March 2006 22:16:01</td><td>76</td><td>-0.25504</td><td>N</td></tr><tr><td>7 September 2006 19:11:13</td><td>82</td><td>-0.21258</td><td>N</td></tr><tr><td>3 March 2007 22:32:51</td><td>88</td><td>1.04157</td><td>T</td></tr><tr><td>28 August 2007 10:51:43</td><td>94</td><td>1.26046</td><td>T</td></tr><tr><td>21 February 2008 02:41:33</td><td>100</td><td>1.13113</td><td>T</td></tr><tr><td>16 August 2008 20:33:08</td><td>106</td><td>0.79168</td><td>P</td></tr><tr><td>9 February 2009 13:47:32</td><td>112</td><td>-0.22876</td><td>N</td></tr><tr><td>7 July 2009 08:43:09</td><td>117</td><td>-1.05207</td><td>N</td></tr><tr><td>5 August 2009 23:53:08</td><td>118</td><td>-0.59755</td><td>N</td></tr><tr><td>31 December 2009 19:22:40</td><td>123</td><td>-0.33517</td><td>N</td></tr><tr><td>26 June 2010 11:14:41</td><td>129</td><td>0.32966</td><td>P</td></tr><tr><td>21 December 2010 07:57:01</td><td>135</td><td>1.01770</td><td>T</td></tr><tr><td>15 June 2011 19:34:34</td><td>141</td><td>1.71950</td><td>T</td></tr><tr><td>10 December 2011 13:30:51</td><td>147</td><td>1.16711</td><td>T</td></tr><tr><td>4 June 2012 10:25:49</td><td>153</td><td>0.22537</td><td>P</td></tr><tr><td>28 November 2012 13:55:15</td><td>159</td><td>-0.10429</td><td>N</td></tr><tr><td>25 April 2013 19:32:14</td><td>164</td><td>-0.40544</td><td>N</td></tr><tr><td>25 May 2013 03:54:15</td><td>165</td><td>-1.24837</td><td>N</td></tr><tr><td>18 October 2013 23:39:14</td><td>170</td><td>-0.51284</td><td>N</td></tr><tr><td>15 April 2014 06:26:54</td><td>176</td><td>1.01291</td><td>T</td></tr><tr><td>8 October 2014 10:39:50</td><td>182</td><td>0.87907</td><td>P</td></tr><tr><td>4 April 2015 10:22:36</td><td>188</td><td>1.11707</td><td>T</td></tr><tr><td>28 September 2015 02:59:50</td><td>194</td><td>1.16058</td><td>T</td></tr><tr><td>23 March 2016 10:50:14</td><td>200</td><td>-0.20363</td><td>N</td></tr><tr><td>16 September 2016 19:18:12</td><td>206</td><td>-0.29742</td><td>N</td></tr><tr><td>10 February 2017 23:41:18</td><td>211</td><td>-0.38435</td><td>N</td></tr><tr><td>7 August 2017 17:12:29</td><td>217</td><td>0.02692</td><td>P</td></tr><tr><td>31 January 2018 12:35:10</td><td>223</td><td>0.97992</td><td>P</td></tr><tr><td>27 July 2018 19:24:40</td><td>229</td><td>1.42468</td><td>T</td></tr></tbody></table><p>And the following show the comparison of the epicycle model to the values from the catalogue.</p><p>Errors in the predicted magnitude:
+<img src=../images/error_magnitude_epicycle_model_eclipse.png alt="Errors in the predicted magnitude"></p><p>Errors in the predicted time:
+<img src=../images/error_time_epicycle_model_eclipse.png alt="Errors in predicted time"></p><p>The epicycle model gives an average error of about $36$ minutes in the predicted times for the eclipse, and average error in the predicted magnitudes of about $0.2$. Curiously, our graph also suggests that there is a greater tendency for our model to predict eclipses before they actually happen, and at a magnitude less than the real value.</p><h2 id=predicting-solar-eclipses>Predicting Solar Eclipses</h2><p>We might think that we can modify the program above to predict solar eclipses, by modifying the function <code>find_moon()</code> to determine the time of new moon instead and adjusting the calculations for magnitude and eclipse type. This idea would be correct, however we run into the issue of <em>parallax</em>. Since the moon is close to the Earth,
+different observers do not see the moon in exactly the same position in the sky at the same time. For a solar eclipse to occur, the center of the moon must line up with the sun, as viewed from the observer.</p><p>When we calculate the position of the moon from theory, the position we determine corresponds to what would be seen by a hypothetical observer, viewing from the center of Earth. This is the <em>geocentric position</em> of the moon&mdash;or we may say the true position. But the position of the moon that we actually see depends on our location on the Earth&mdash;this is the apparent position. An observer who sees the moon directly overhead&mdash;at zenith, sees the moon at its true position, because a straight line can be drawn from the center of the Earth, through the observer and the moon. The lower the moon appears in the sky, the further it is from the true position. The angle between the true and apparent position is what we refer to as parallax. The standard value for parallax is usually given for apparent position at the horizon (i.e $90\degree$ from zenith), where the value is maximum.</p><p>There are a few ways to measure parallax from observations. One way, suggested by Hipparchus, is to observe a solar eclipse from two locations on the Earth. The difference in the observed magnitude indicates the different positions observed. This method however requires us to assume something about the parallax of the sun. The more modern method involves measuring the angle between the moon and zenith, when it reaches its highest point&mdash;at meridian, from two different locations on the Earth on the same meridian.</p><p>The measured value of parallax has a value of around $0.95\degree$. We can, calculate the distance to the moon from this:</p><p>$$d = \frac {R_E}{\sin(0.95\degree)} = 60.3\times 6371 \mathrm{km} $$
+$$d = 384, 171 \mathrm{km}$$</p><p>where $R_E$ is the radius of the Earth.</p><p>The effect of parallax means that the suggested modification of our program would only be able to determine the time of a solar eclipse for an observer who sees the sun and moon directly overhead&mdash;these observers are said to be at the <em>subsolar</em> and <em>sublunar</em> points. Our program would therefore only predict eclipses which occur at noon for an observer in the tropics. This is however not a bad starting point.</p><p>Let us modify our program in the following manner to predict the time of new moon.</p><div class=highlight><pre tabindex=0 style=color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=display:flex><span><span style=color:#ff79c6>def</span> <span style=color:#50fa7b>find_moon</span>(n):
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># n is the lunation number, i.e the number of new moons</span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># since epoch.</span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Negative values of n give eclipses before epoch.</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4>#Determine the angle required for  the sun and moon to align</span>
+</span></span><span style=display:flex><span>    elong_m <span style=color:#ff79c6>=</span> angle(sun_lm_ep <span style=color:#ff79c6>-</span> moon_lm_ep)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Difference in speed between sun and moon</span>
+</span></span><span style=display:flex><span>    w_e <span style=color:#ff79c6>=</span> moon_w <span style=color:#ff79c6>-</span> sun_w
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    T_syn <span style=color:#ff79c6>=</span> <span style=color:#bd93f9>360</span><span style=color:#ff79c6>/</span>w_e <span style=color:#6272a4># Synodic month (approx 29.5)</span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4>#Calculate the number of days to the nth mean full moon</span>
+</span></span><span style=display:flex><span>    days_m <span style=color:#ff79c6>=</span> T_syn <span style=color:#ff79c6>*</span> n <span style=color:#ff79c6>+</span>  elong_m<span style=color:#ff79c6>/</span>w_e
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>    <span style=color:#6272a4># Repeat until the angle between sun and moon is sufficiently close to 180</span>
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>for</span> i <span style=color:#ff79c6>in</span> <span style=color:#8be9fd;font-style:italic>range</span>(<span style=color:#bd93f9>5</span>):
+</span></span><span style=display:flex><span>        <span style=color:#6272a4>#Calculate the mean longitude for the sun and moon</span>
+</span></span><span style=display:flex><span>        moon_lm <span style=color:#ff79c6>=</span> angle(moon_lm_ep <span style=color:#ff79c6>+</span> moon_w <span style=color:#ff79c6>*</span> days_m)
+</span></span><span style=display:flex><span>        sun_lm <span style=color:#ff79c6>=</span> angle(sun_lm_ep <span style=color:#ff79c6>+</span> sun_w <span style=color:#ff79c6>*</span>  days_m)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#6272a4># Calculate the true longitude for the sun and moon</span>
+</span></span><span style=display:flex><span>        moon_lt <span style=color:#ff79c6>=</span> epi_calc(moon_T, moon_Ta, moon_r,  moon_lm_ep, moon_apo_ep, days_m)
+</span></span><span style=display:flex><span>        sun_lt <span style=color:#ff79c6>=</span> epi_calc(sun_T, sun_Ta, sun_r, sun_lm_ep, sun_apo_ep, days_m)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#6272a4># Angle between sun and moon</span>
+</span></span><span style=display:flex><span>        elong_t <span style=color:#ff79c6>=</span> angle(sun_lt <span style=color:#ff79c6>-</span> moon_lt)
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        elong_t <span style=color:#ff79c6>=</span> <span style=color:#ff79c6>-</span>(<span style=color:#bd93f9>360</span> <span style=color:#ff79c6>-</span> elong_t) <span style=color:#ff79c6>if</span> elong_t <span style=color:#ff79c6>&gt;</span> <span style=color:#bd93f9>180</span> <span style=color:#ff79c6>else</span> elong_t
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        <span style=color:#6272a4># Approximate number of days left for the moon to reach opposite the sun</span>
+</span></span><span style=display:flex><span>        days_x <span style=color:#ff79c6>=</span> elong_t<span style=color:#ff79c6>/</span>w_e
+</span></span><span style=display:flex><span>
+</span></span><span style=display:flex><span>        days_m <span style=color:#ff79c6>+=</span> days_x
+</span></span><span style=display:flex><span>    
+</span></span><span style=display:flex><span>    <span style=color:#ff79c6>return</span> days_m
+</span></span></code></pre></div><p>If an eclipse were to happen, our program would correctly predict the exact time when the eclipse reaches its greatest magnitude. But an accurate prediction of the magnitude of the eclipse now depends on the location of the observer and the position of the sun and moon relative to zenith. Further, the position of the sun depends on the time of year and time of day&mdash;which in turn depends on the terrestrial longitude of the observer.</p><p>The first step we must take therefore take is to determine the position of an observer located at the subsolar point on the Earth. To find the longitude of the observer, we find the difference in time between the observer&mdash;which is noon since the sun is directly overhead&mdash;and the time of the eclipse, which is given in UTC. We must, however, make a distinction between true solar noon&mdash;when the sun is at its highest point, and clock noon&mdash;exactly 12:00 local time. The procedure for calculating the time of true noon will be the subject of my next article, but for now, it will suffice to note the following correction to determine the time of true noon.
+$$\Delta t = 9.86\sin(0.036d+16.07) - 7.66\sin(0.018d+6.24)$$</p><p>Here $\Delta t$, represents the amount of time in minutes we must subtract to get the time of true noon, and $d$ represents the day of the year. The $\sin$ function here takes the values in degrees. For example, if the eclipse occurred on January 28, then we input $d=28$ into the formula, this gives us $\Delta t = -12.93$. We subtract this from $12:00$, to get $12:13$. This value is the true solar time and represents the local time when the moon will be above the subsolar point. The longitude of the subsolar point is therefore given by subtracting this value from the time of the eclipse in UTC.</p><p>For example, if the eclipse were to occur at $20:53$ UTC, then the longitude of the subsolar point would be given by subtracting this from $12:13$ which gives $8.67$ hours. We can convert this to degrees by multiplying by $\frac{360}{12}$, this gives $120\degree$. Since the time is ahead of UTC, the location is west. So, in that case, the longitude of the subsolar point&mdash;where the greatest eclipse occurs&mdash;would be $130\degree \text{W}$.</p><p>To determine the latitude of the subsolar point, we simply need to determine the angle between the sun and the equator. This is called the <em>declination</em> of the sun.</p><table><thead><tr><th>One</th><th>Two</th><th>Three</th></tr></thead><tbody><tr><td><td colspan=2 align=center>Find</td></td><td></td><td></td></tr></tbody></table><table><thead><tr><th><th colspan=2 align=center>Head1</th></th><th><th colspan=2 align=center>Head2</th></th></tr></thead><tbody><tr><td>4</td><td>5</td></tr></tbody></table><h1>Hello There</h1><div class=footnotes role=doc-endnotes><hr><ol><li id=fn:1><p><em>D. Duke</em> (2005), <em>Hipparchus&rsquo; Eclipse Trios and Early Trigonometry</em>, <a href=https://people.sc.fsu.edu/~dduke/alm411-3.pdf>people.sc.fsu.edu/~dduke/alm411-3.pdf</a>&#160;<a href=#fnref:1 class=footnote-backref role=doc-backlink>&#8617;&#xfe0e;</a></p></li></ol></div></article></main></main><hr><style>.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview{display:flex!important;flex-direction:column!important;justify-content:center!important;margin-top:30px!important;padding:clamp(17px,5%,40px)clamp(17px,7%,50px)!important;max-width:none!important;border-radius:6px!important;box-shadow:0 5px 25px rgba(34,60,47,.25)!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview,.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview *{box-sizing:border-box!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-heading{width:100%!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-heading h5{margin-top:0!important;margin-bottom:0!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field{margin-top:20px!important;width:100%!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input{width:100%!important;height:40px!important;border-radius:6px!important;border:2px solid #e9e8e8!important;background-color:#fff;outline:none!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input{color:#000!important;font-family:montserrat!important;font-size:14px;font-weight:400;line-height:20px;text-align:center}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input::placeholder{color:#000!important;opacity:1!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input:-ms-input-placeholder{color:#000!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input::-ms-input-placeholder{color:#000!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button{margin-top:10px!important;width:100%!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button button{width:100%!important;height:40px!important;border:0!important;border-radius:6px!important;line-height:0!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button button:hover{cursor:pointer!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line{color:#231f20!important;font-family:montserrat!important;font-size:13px!important;font-weight:400!important;line-height:25px!important;text-align:center!important;text-decoration:none!important;display:flex!important;width:100%!important;justify-content:center!important;align-items:center!important;margin-top:10px!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line img{margin-left:10px!important;height:1.13em!important;max-height:1.13em!important}</style><div class=followit--follow-form-container attr-a attr-b attr-c attr-d attr-e attr-f><form data-v-bc091608 action="https://api.follow.it/subscription-form/TUhYWjZuOXBOWUFyNlNMK2Fid2JLOXhpL0o2QnZsT0dDclRCN0t1blBpOWdJLzhzZW91RUlnZ3BBZmFHa0RJcUVndHBveWVJWHdHZ0p2N3lIOFBOMHU5aFc5VVlTOHVOaVBSV1dlZUgxWEVDRGF5NDczQ09IVGZlMlJ4Vmo3SkN8K2hnRlY3dzdhUUdZclJXWEQrMTkvOXZEaVIydWVrUmNIN004RnlYbTBhaz0=/8" method=post><div data-v-bc091608 class=form-preview style=background-color:#fff;position:relative;border-style:solid;border-width:1px;border-color:#ccc><div data-v-bc091608 class=preview-heading><h5 data-v-bc091608 style=text-transform:none!important;font-family:Helvetica;font-weight:700;color:#000;font-size:16px;text-align:center>Get new posts via email:</h5></div><div data-v-bc091608 class=preview-input-field><input data-v-bc091608 type=email name=email required placeholder="Enter your email" spellcheck=false style=text-transform:none!important;font-family:Arial;font-weight:400;color:#000;font-size:14px;text-align:center;background-color:#fff></div><div data-v-bc091608 class=preview-submit-button><button data-v-bc091608 type=submit style=text-transform:none!important;font-family:Arial;font-weight:700;color:#fff;font-size:16px;text-align:center;background-color:#000>Subscribe</button></div></div></form><a href=https://follow.it class=powered-by-line>Powered by <img src=https://follow.it/static/img/colored-logo.svg alt=follow.it height=17px></a></div><a href=https://ryandcole.us.to/blog//index.xml>RSS</a><footer class=footer-bottom><p>&copy;2026 Ryan Cole Blog</p></footer></body></html>

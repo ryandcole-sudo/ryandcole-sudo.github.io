@@ -1,0 +1,108 @@
+/* Table of Contents Styling */
+        #TableOfContents {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 280px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            z-index: 1000;
+        }
+
+        #TableOfContents h3 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        #TableOfContents ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        #TableOfContents li {
+            margin: 0;
+        }
+
+        #TableOfContents a {
+            display: block;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: #6b7280;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            line-height: 1.4;
+            border-left: 3px solid transparent;
+        }
+
+        #TableOfContents a:hover {
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+
+        /* Active link styling */
+        #TableOfContents a.active {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+            border-left-color: #3b82f6;
+            font-weight: 500;
+        }
+
+        /* Nested list styling for different heading levels */
+        #TableOfContents ul ul a {
+            padding-left: 24px;
+            font-size: 13px;
+        }
+
+        #TableOfContents ul ul ul a {
+            padding-left: 36px;
+            font-size: 12px;
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Demo content styling */
+        .content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+        }
+
+        .content h1, .content h2, .content h3 {
+            margin-top: 40px;
+            margin-bottom: 16px;
+            scroll-margin-top: 20px;
+        }
+
+        .content p {
+            margin-bottom: 16px;
+            color: #374151;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            #TableOfContents {
+                position: relative;
+                width: 100%;
+                max-height: none;
+                margin: 20px 0;
+                right: auto;
+                top: auto;
+            }
+        }
