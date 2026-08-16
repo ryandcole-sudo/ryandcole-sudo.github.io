@@ -1,3 +1,48 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Ryan Cole Blog</title><link>https://ryandcole.us.to/blog/</link><description>Recent content on Ryan Cole Blog</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="https://ryandcole.us.to/blog/index.xml" rel="self" type="application/rss+xml"/><item><title>Slicing Circles: How Kepler Solved Planetary Motion</title><link>https://ryandcole.us.to/blog/kepler-equation-slicing-circles/</link><pubDate>Sat, 15 Aug 2026 12:09:00 +0000</pubDate><guid>https://ryandcole.us.to/blog/kepler-equation-slicing-circles/</guid><description>Suppose we want to slice a given circle into two segments using a chord. If our goal is to divide the circle so that the areas of the two segments have a specified ratio, where along the diameter should we make the cut?
-Conceptually, this is not a very difficult geometric problem. Let the circle have radius $r=1$ (a unit circle), and let $x$ be the distance from the center to the cut.</description></item><item><title>Accuracy of an Epicycle Model for Predicting Eclipses</title><link>https://ryandcole.us.to/blog/accuracy-epicycle-eclipse/</link><pubDate>Tue, 13 Aug 2024 22:38:44 -0500</pubDate><guid>https://ryandcole.us.to/blog/accuracy-epicycle-eclipse/</guid><description>One of the first geometric models for predicting the motion of the sun and moon was devised by Hipparchus over 2000 years ago (in 150 BC). In this model, the moon moves on a small circle called the epicycle, and this epicycle moves on a larger circle called the deferent. Both these motions are uniform. The main reason for introducing this model was to explain the non-uniform motion of the that was observed.</description></item><item><title>Periods of the Moon's Orbit from observation</title><link>https://ryandcole.us.to/blog/periods-moon-orbit/</link><pubDate>Fri, 09 Aug 2024 21:55:30 -0500</pubDate><guid>https://ryandcole.us.to/blog/periods-moon-orbit/</guid><description> Astronomy is a &amp;hellip;
-Sun and Moon</description></item><item><title>Welcome</title><link>https://ryandcole.us.to/blog/welcome/</link><pubDate>Sat, 29 Jun 2024 03:47:53 -0500</pubDate><guid>https://ryandcole.us.to/blog/welcome/</guid><description>In this blog I post about anything related to my areas of interest, such as Computer science, the history of science, physics, mathematics and chess.</description></item></channel></rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Ryan Cole Blog</title>
+    <link>https://ryandcole.us.to/blog/</link>
+    <description>Recent content on Ryan Cole Blog</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language><atom:link href="https://ryandcole.us.to/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Slicing Circles: How Kepler Solved Planetary Motion</title>
+      <link>https://ryandcole.us.to/blog/kepler-equation-slicing-circles/</link>
+      <pubDate>Sat, 15 Aug 2026 12:09:00 +0000</pubDate>
+      
+      <guid>https://ryandcole.us.to/blog/kepler-equation-slicing-circles/</guid>
+      <description>Suppose we want to slice a given circle into two segments using a chord. If our goal is to divide the circle so that the areas of the two segments have a specified ratio, where along the diameter should we make the cut?
+Conceptually, this is not a very difficult geometric problem. Let the circle have radius $r=1$ (a unit circle), and let $x$ be the distance from the center to the cut.</description>
+    </item>
+    
+    <item>
+      <title>Accuracy of an Epicycle Model for Predicting Eclipses</title>
+      <link>https://ryandcole.us.to/blog/accuracy-epicycle-eclipse/</link>
+      <pubDate>Tue, 13 Aug 2024 22:38:44 -0500</pubDate>
+      
+      <guid>https://ryandcole.us.to/blog/accuracy-epicycle-eclipse/</guid>
+      <description>One of the first geometric models for predicting the motion of the sun and moon was devised by Hipparchus over 2000 years ago (in 150 BC). In this model, the moon moves on a small circle called the epicycle, and this epicycle moves on a larger circle called the deferent. Both these motions are uniform. The main reason for introducing this model was to explain the non-uniform motion of the that was observed.</description>
+    </item>
+    
+    <item>
+      <title>Periods of the Moon&#39;s Orbit from observation</title>
+      <link>https://ryandcole.us.to/blog/periods-moon-orbit/</link>
+      <pubDate>Fri, 09 Aug 2024 21:55:30 -0500</pubDate>
+      
+      <guid>https://ryandcole.us.to/blog/periods-moon-orbit/</guid>
+      <description> Astronomy is a &amp;hellip;
+Sun and Moon </description>
+    </item>
+    
+    <item>
+      <title>Welcome</title>
+      <link>https://ryandcole.us.to/blog/welcome/</link>
+      <pubDate>Sat, 29 Jun 2024 03:47:53 -0500</pubDate>
+      
+      <guid>https://ryandcole.us.to/blog/welcome/</guid>
+      <description>In this blog I post about anything related to my areas of interest, such as Computer science, the history of science, physics, mathematics and chess.</description>
+    </item>
+    
+  </channel>
+</rss>

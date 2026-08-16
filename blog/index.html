@@ -1,7 +1,210 @@
-<!doctype html><html lang=en><head><meta name=generator content="Hugo 0.105.0-DEV"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1,minimum-scale=1"><meta name=author content="Ryan Cole"><script type=text/javascript src=./umbrella.min.js></script>
-<script type=text/javascript src=./main.js></script>
-<link rel=stylesheet href=./katex/katex.min.css><script defer src=./katex/katex.min.js></script>
-<script defer src=./katex/auto-render.min.js id=katex-script></script>
-<script>u("#katex-script").on("load",function(){renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}]})})</script><title>Ryan Cole Blog</title><link rel=stylesheet href=./css/style.css type=text/css media=all><link rel=alternate type=application/rss+xml href=https://ryandcole.us.to/blog/index.xml title="Ryan Cole Blog"></head><body><header><div class=header-content><a href=index.html class=logo>Ryan Cole</a><header class=site-header><nav class=site-nav><a class=logo href=https://ryandcole.us.to/blog/>Ryan Cole Blog</a><ul class=main-menu></ul></nav></header></div></header><main><div class=blog-header id=top><h1>Ryan Cole Blog</h1><div class=blog-meta><span>📅 Published: January 1, 0001</span>
-<span>⏱️ 0 min read</span>
-<span>👤 Ryan Cole</span></div></div><h1>Ryan Cole Blog</h1><article class=post-snippet><h3><a href=./kepler-equation-slicing-circles/>Slicing Circles: How Kepler Solved Planetary Motion</a></h3><time datetime=2026-08-15T12:09:00Z>August 15, 2026</time></article><article class=post-snippet><h3><a href=./accuracy-epicycle-eclipse/>Accuracy of an Epicycle Model for Predicting Eclipses</a></h3><time datetime=2024-08-13T22:38:44-05:00>August 13, 2024</time></article><article class=post-snippet><h3><a href=./periods-moon-orbit/>Periods of the Moon's Orbit from observation</a></h3><time datetime=2024-08-09T21:55:30-05:00>August 9, 2024</time></article><article class=post-snippet><h3><a href=./welcome/>Welcome</a></h3><time datetime=2024-06-29T03:47:53-05:00>June 29, 2024</time></article></main><hr><style>.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview{display:flex!important;flex-direction:column!important;justify-content:center!important;margin-top:30px!important;padding:clamp(17px,5%,40px)clamp(17px,7%,50px)!important;max-width:none!important;border-radius:6px!important;box-shadow:0 5px 25px rgba(34,60,47,.25)!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview,.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview *{box-sizing:border-box!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-heading{width:100%!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-heading h5{margin-top:0!important;margin-bottom:0!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field{margin-top:20px!important;width:100%!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input{width:100%!important;height:40px!important;border-radius:6px!important;border:2px solid #e9e8e8!important;background-color:#fff;outline:none!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input{color:#000!important;font-family:montserrat!important;font-size:14px;font-weight:400;line-height:20px;text-align:center}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input::placeholder{color:#000!important;opacity:1!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input:-ms-input-placeholder{color:#000!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input::-ms-input-placeholder{color:#000!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button{margin-top:10px!important;width:100%!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button button{width:100%!important;height:40px!important;border:0!important;border-radius:6px!important;line-height:0!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button button:hover{cursor:pointer!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line{color:#231f20!important;font-family:montserrat!important;font-size:13px!important;font-weight:400!important;line-height:25px!important;text-align:center!important;text-decoration:none!important;display:flex!important;width:100%!important;justify-content:center!important;align-items:center!important;margin-top:10px!important}.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line img{margin-left:10px!important;height:1.13em!important;max-height:1.13em!important}</style><div class=followit--follow-form-container attr-a attr-b attr-c attr-d attr-e attr-f><form data-v-bc091608 action="https://api.follow.it/subscription-form/TUhYWjZuOXBOWUFyNlNMK2Fid2JLOXhpL0o2QnZsT0dDclRCN0t1blBpOWdJLzhzZW91RUlnZ3BBZmFHa0RJcUVndHBveWVJWHdHZ0p2N3lIOFBOMHU5aFc5VVlTOHVOaVBSV1dlZUgxWEVDRGF5NDczQ09IVGZlMlJ4Vmo3SkN8K2hnRlY3dzdhUUdZclJXWEQrMTkvOXZEaVIydWVrUmNIN004RnlYbTBhaz0=/8" method=post><div data-v-bc091608 class=form-preview style=background-color:#fff;position:relative;border-style:solid;border-width:1px;border-color:#ccc><div data-v-bc091608 class=preview-heading><h5 data-v-bc091608 style=text-transform:none!important;font-family:Helvetica;font-weight:700;color:#000;font-size:16px;text-align:center>Get new posts via email:</h5></div><div data-v-bc091608 class=preview-input-field><input data-v-bc091608 type=email name=email required placeholder="Enter your email" spellcheck=false style=text-transform:none!important;font-family:Arial;font-weight:400;color:#000;font-size:14px;text-align:center;background-color:#fff></div><div data-v-bc091608 class=preview-submit-button><button data-v-bc091608 type=submit style=text-transform:none!important;font-family:Arial;font-weight:700;color:#fff;font-size:16px;text-align:center;background-color:#000>Subscribe</button></div></div></form><a href=https://follow.it class=powered-by-line>Powered by <img src=https://follow.it/static/img/colored-logo.svg alt=follow.it height=17px></a></div><a href=https://ryandcole.us.to/blog//index.xml>RSS</a><footer class=footer-bottom><p>&copy;2026 Ryan Cole Blog</p></footer></body></html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta name="generator" content="Hugo 0.105.0-DEV" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ryan Cole">
+
+    <script type="text/javascript" src="./umbrella.min.js"></script>
+    <script type="text/javascript" src="./main.js"></script>
+    
+    <link rel="stylesheet" href="./katex/katex.min.css">
+    <script defer src="./katex/katex.min.js"></script>
+    <script defer src="./katex/auto-render.min.js" id="katex-script"></script>
+    <script>
+      u("#katex-script").on("load", function () {
+        renderMathInElement(document.body, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false },
+          ],
+        });
+      });
+    </script>
+
+    <title>Ryan Cole Blog</title>
+
+    <link rel="stylesheet" href="./css/style.css" type="text/css" media="all" />
+
+    
+    <link rel="alternate" type="application/rss+xml" href="https://ryandcole.us.to/blog/index.xml" title="Ryan Cole Blog" />
+     </head>
+
+  <body>
+     <div class="progress-bar"></div>
+     <header>
+        <div class="header-content">
+             <a class="logo" href="https://ryandcole.us.to/blog/">
+      Ryan Cole Blog</a>
+              <nav class="site-nav">
+    <ul class="main-menu">
+      
+    </ul>
+  </nav>
+
+        </div>
+    </header>
+        
+	<main>
+        <div class="blog-header" id="top">
+            <h1>Ryan Cole Blog</h1>
+            <div class="blog-meta">
+                <span>📅 Published: January 1, 0001</span>
+                <span>⏱️ 0 min read</span>
+                <span>👤 Ryan Cole</span>
+            </div>
+        </div>
+
+
+
+<h1>Ryan Cole Blog</h1>
+
+
+
+
+<article class="post-snippet">
+  <h3>
+    <a href="./kepler-equation-slicing-circles/">Slicing Circles: How Kepler Solved Planetary Motion</a>
+  </h3>
+	<time datetime="2026-08-15T12:09:00Z">
+		August 15, 2026
+	</time>
+</article>
+
+<article class="post-snippet">
+  <h3>
+    <a href="./accuracy-epicycle-eclipse/">Accuracy of an Epicycle Model for Predicting Eclipses</a>
+  </h3>
+	<time datetime="2024-08-13T22:38:44-05:00">
+		August 13, 2024
+	</time>
+</article>
+
+<article class="post-snippet">
+  <h3>
+    <a href="./periods-moon-orbit/">Periods of the Moon&#39;s Orbit from observation</a>
+  </h3>
+	<time datetime="2024-08-09T21:55:30-05:00">
+		August 9, 2024
+	</time>
+</article>
+
+<article class="post-snippet">
+  <h3>
+    <a href="./welcome/">Welcome</a>
+  </h3>
+	<time datetime="2024-06-29T03:47:53-05:00">
+		June 29, 2024
+	</time>
+</article>
+
+
+</main>
+
+<hr/>
+
+
+<style>
+    .followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  margin-top: 30px !important;
+  padding: clamp(17px, 5%, 40px) clamp(17px, 7%, 50px) !important;
+  max-width: none !important;
+  border-radius: 6px !important;
+  box-shadow: 0 5px 25px rgba(34, 60, 47, 0.25) !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview,
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview *{
+  box-sizing: border-box !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-heading {
+  width: 100% !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-heading h5{
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field {
+  margin-top: 20px !important;
+  width: 100% !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input {
+  width: 100% !important;
+  height: 40px !important;
+  border-radius: 6px !important;
+  border: 2px solid #e9e8e8 !important;
+  background-color: #fff;
+  outline: none !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input {
+  color: #000000 !important;
+  font-family: "Montserrat" !important;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+  text-align: center;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input::placeholder {
+  color: #000000 !important;
+  opacity: 1 !important;
+}
+
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input:-ms-input-placeholder {
+  color: #000000 !important;
+}
+
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-input-field input::-ms-input-placeholder {
+  color: #000000 !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button {
+  margin-top: 10px !important;
+  width: 100% !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button button {
+  width: 100% !important;
+  height: 40px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  line-height: 0px !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .form-preview .preview-submit-button button:hover {
+  cursor: pointer !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line {
+  color: #231f20 !important;
+  font-family: "Montserrat" !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 25px !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  display: flex !important;
+  width: 100% !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin-top: 10px !important;
+}
+.followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line img {
+  margin-left: 10px !important;
+  height: 1.13em !important;
+  max-height: 1.13em !important;
+}
+
+  </style>
+  <div class="followit--follow-form-container" attr-a attr-b attr-c attr-d attr-e attr-f>
+    <form data-v-bc091608="" action="https://api.follow.it/subscription-form/TUhYWjZuOXBOWUFyNlNMK2Fid2JLOXhpL0o2QnZsT0dDclRCN0t1blBpOWdJLzhzZW91RUlnZ3BBZmFHa0RJcUVndHBveWVJWHdHZ0p2N3lIOFBOMHU5aFc5VVlTOHVOaVBSV1dlZUgxWEVDRGF5NDczQ09IVGZlMlJ4Vmo3SkN8K2hnRlY3dzdhUUdZclJXWEQrMTkvOXZEaVIydWVrUmNIN004RnlYbTBhaz0=/8" method="post"><div data-v-bc091608="" class="form-preview" style="background-color: rgb(255, 255, 255); position: relative; border-style: solid; border-width: 1px; border-color: rgb(204, 204, 204);"><div data-v-bc091608="" class="preview-heading"><h5 data-v-bc091608="" style="text-transform: none !important; font-family: Helvetica; font-weight: bold; color: rgb(0, 0, 0); font-size: 16px; text-align: center;">Get new posts via email:</h5></div><div data-v-bc091608="" class="preview-input-field"><input data-v-bc091608="" type="email" name="email" required="" placeholder="Enter your email" spellcheck="false" style="text-transform: none !important; font-family: Arial; font-weight: normal; color: rgb(0, 0, 0); font-size: 14px; text-align: center; background-color: rgb(255, 255, 255);"></div><div data-v-bc091608="" class="preview-submit-button"><button data-v-bc091608="" type="submit" style="text-transform: none !important; font-family: Arial; font-weight: bold; color: rgb(255, 255, 255); font-size: 16px; text-align: center; background-color: rgb(0, 0, 0);">Subscribe</button></div></div></form><a href="https://follow.it" class="powered-by-line">Powered by <img src="https://follow.it/static/img/colored-logo.svg" alt="follow.it" height="17px"/></a>
+  </div>
+
+
+<a href="https://ryandcole.us.to/blog//index.xml">RSS</a>
+	
+<footer class="footer-bottom">
+	<p>&copy;2026 Ryan Cole Blog</p>
+</footer>
+
+</body>
+</html>
+

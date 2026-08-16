@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog Mobile Fix — Demo</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="progress-bar"></div>
+
+<header>
+  <div class="header-content">
+    <a href="#" class="logo">Kepler's Notebook</a>
+    <nav>
+      <ul>
+        <li><a href="#" class="back-link">← Home</a></li>
+        <li><a href="#intro">Article</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+    <button class="burg" aria-label="Menu"><span></span></button>
+  </div>
+</header>
+
+<div id="toast-container"></div>
+
+<main>
+  <div class="blog-header">
+    <h1 class="main-title">The Vicarious Hypothesis: How Kepler Cracked Mars</h1>
+    <div class="blog-meta">
+      <span>📅 August 15, 2026</span>
+      <span>⏱️ 12 min read</span>
+      <span>🏷️ Astronomy, History of Math</span>
+    </div>
+  </div>
+
+  <button class="toc-toggle" aria-expanded="false">
+    <span>Contents</span><span class="chevron">▾</span>
+  </button>
+
+  <nav id="TableOfContents">
+    <h3>Contents</h3>
+    <ul>
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#geometry">The Geometry Problem</a></li>
+      <li><a href="#timeline">Timeline of Discovery</a></li>
+      <li><a href="#code">Sample Calculation</a></li>
+      <li><a href="#data">Orbital Data</a></li>
+      <li><a href="#about">About This Series</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <div class="article-content">
+    <h2 id="intro">Introduction</h2>
+    <p>Every so often a problem in the history of science turns out to hinge on a single stubborn geometric relationship. Kepler's struggle with Mars is exactly that kind of problem — eight minutes of arc that refused to fit any circular model, no matter how many epicycles were piled on.</p>
+
+    <blockquote>"I have shaken the astronomical theories of Antiquity down to the last stone." — the frustration is understandable once you see the geometry involved.</blockquote>
+
+    <h2 id="geometry">The Geometry Problem</h2>
+    <p>The vicarious hypothesis treats the equant point as unknown, solving for its position using observed oppositions rather than assuming it bisects the eccentricity. This single change is what let Kepler match Tycho's data far more precisely than any Ptolemaic or Copernican model before him — and it's the direct ancestor of what became the area law.</p>
+
+    <ul>
+      <li>Four oppositions provide four independent triangles</li>
+      <li>Each triangle constrains the equant location differently</li>
+      <li>Consistency across all four is the real test of the model</li>
+    </ul>
+
+    <h2 id="timeline">Timeline of Discovery</h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <span class="timeline-date">1600</span>
+        <div class="timeline-content">
+          <h4>Kepler joins Tycho</h4>
+          <p>Arrives in Prague to work with Tycho Brahe's unprecedented observational data.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-date">1602</span>
+        <div class="timeline-content">
+          <h4>The Vicarious Hypothesis</h4>
+          <p>Kepler derives a model matching observed Mars positions to within 2 arcminutes.</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <span class="timeline-date">1609</span>
+        <div class="timeline-content">
+          <h4>Astronomia Nova published</h4>
+          <p>The full elliptical orbit and area law are presented publicly for the first time.</p>
+        </div>
+      </div>
+    </div>
+
+    <h2 id="code">Sample Calculation</h2>
+    <p>Here's a minimal snippet for solving the equant offset numerically:</p>
+    <div class="highlight">
+      <pre><code>function solveEquant(oppositions) {
+  // Newton-Raphson iteration on the four-triangle
+  // consistency condition described above.
+  let e = 0.1; // initial eccentricity guess
+  for (let i = 0; i < 50; i++) {
+    const residual = triangleResidual(oppositions, e);
+    const derivative = numericalDerivative(oppositions, e);
+    e -= residual / derivative;
+  }
+  return e;
+}</code></pre>
+    </div>
+
+    <div class="terminal">
+      <pre><code>$ node solve-equant.js
+Iteration 12: e = 0.09265, residual = 0.00004
+Converged. Eccentricity ≈ 0.0926</code></pre>
+    </div>
+
+    <h2 id="data">Orbital Data</h2>
+    <p>A wide comparison table — the classic mobile layout killer — now scrolls independently instead of breaking the page:</p>
+    <table>
+      <caption>Selected orbital eccentricities used in Kepler's four-triangle check</caption>
+      <thead>
+        <tr><th>Opposition Date</th><th>Longitude (°)</th><th>Observed Latitude</th><th>Model Residual (arcmin)</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1587-02-11</td><td>141.2</td><td>+1.02°</td><td>1.8</td><td>Tycho, Uraniborg</td></tr>
+        <tr><td>1591-03-08</td><td>167.9</td><td>+0.88°</td><td>2.1</td><td>Tycho, Uraniborg</td></tr>
+        <tr><td>1593-05-01</td><td>220.4</td><td>-0.44°</td><td>1.6</td><td>Tycho, Uraniborg</td></tr>
+        <tr><td>1595-06-30</td><td>288.7</td><td>-1.10°</td><td>2.4</td><td>Tycho, Uraniborg</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="about">About This Series</h2>
+    <p>This is part of an ongoing series reconstructing classical and early-modern planetary models geometrically, with interactive tools alongside each article.</p>
+
+    <div class="sidebar">
+      <h3>Related Topics</h3>
+      <div class="tag-cloud">
+        <a href="#" class="tag">Kepler's Equation</a>
+        <a href="#" class="tag">Epicycles</a>
+        <a href="#" class="tag">Hipparchus</a>
+        <a href="#" class="tag">Orbital Mechanics</a>
+      </div>
+    </div>
+
+    <div class="newsletter-signup" id="contact">
+      <h3>Get new articles by email</h3>
+      <form onsubmit="event.preventDefault(); toast_text('Thanks — check your inbox to confirm!');">
+        <input type="email" placeholder="you@example.com" required>
+        <button type="submit">Subscribe</button>
+      </form>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>&copy; 2026 Kepler's Notebook — Built with <a href="#">geometry and stubbornness</a></p>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>
