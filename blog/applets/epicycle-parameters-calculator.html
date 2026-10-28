@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Epicycle Parameters Calculator</title>
+    <style>
+        /* ============================================================
+           SELF-CONTAINED STYLES — designed for iframe embedding.
+           Mobile-first, lightweight, no heavy backgrounds.
+           Uses a clean, flat, light theme that blends with any page.
+           ============================================================ */
+        :root {
+            --text-primary: #1e1e1e;
+            --text-secondary: #555555;
+            --text-muted: #888888;
+            --accent-blue: #0077cc;
+            --accent-blue-glow: rgba(0, 119, 204, 0.15);
+            --sun-yellow: #e6a800;
+            --moon-gray: #5f6b7a;
+            --earth-blue: #2c7be0;
+            --border-color: #d0d0d0;
+            --input-bg: #ffffff;
+            --card-bg: #f8f8f8;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                "Helvetica Neue", Arial, sans-serif;
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 10px;
+            --touch-target: 42px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: transparent;
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 8px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            margin: 0;
+        }
+
+        /* --- Widget container --- */
+        .astro-widget {
+            width: 100%;
+            max-width: 460px;
+            background: transparent;
+            padding: 4px 0 12px;
+        }
+
+        /* --- Heading --- */
+        .astro-widget h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 4px;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        .astro-widget .subtitle {
+            font-size: 0.8rem;
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-weight: 400;
+        }
+
+        /* --- Form --- */
+        .astro-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .input-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+        }
+          
+        .input-group input[type="text"],
+        .input-group input[type="number"],
+        .input-group input[type="date"],
+        .input-group input[type="time"],
+        .input-group input[type="datetime-local"] {
+            width: 100%;
+            font-size: 1rem;
+            padding: 9px 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            appearance: none;
+            -webkit-appearance: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            min-height: var(--touch-target);
+        }
+         
+        .input-group input[type="text"]:focus,
+        .input-group input[type="number"]:focus,
+        .input-group input[type="date"]:focus,
+        .input-group input[type="time"]:focus,
+        .input-group input[type="datetime-local"] {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--accent-blue-glow);
+        }
+
+        .input-group input::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        /* --- Buttons --- */
+        .button-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .button-group button {
+            flex: 1 1 auto;
+            min-height: var(--touch-target);
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease,
+                transform 0.1s ease, box-shadow 0.2s ease;
+            font-family: var(--font-family);
+            letter-spacing: 0.02em;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+            background: #fafafa;
+            color: var(--text-primary);
+        }
+
+        .button-group button:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: var(--accent-blue) !important;
+            color: #ffffff !important;
+            border-color: var(--accent-blue) !important;
+            font-weight: 700;
+        }
+
+        .btn-primary:hover {
+            background: #0066b3 !important;
+            box-shadow: 0 0 12px var(--accent-blue-glow);
+        }
+
+        .btn-secondary:hover {
+            background: #f0f0f0;
+            border-color: #aaa;
+        }
+
+        /* --- Canvas container --- */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            margin: 12px auto 14px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: #fbfbfb;
+            aspect-ratio: 1 / 1;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: default;
+        }
+
+        /* --- Results --- */
+        .results {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            border: 1px solid #eaeaea;
+        }
+
+        .result-card h3 {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+            font-size: 0.88rem;
+        }
+
+        .result-row .label {
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .result-row .value {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.01em;
+        }
+
+        .result-row .value.sun {
+            color: var(--sun-yellow);
+        }
+
+        .result-row .value.moon {
+            color: var(--moon-gray);
+        }
+
+        .moon-phase-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            padding-top: 4px;
+            font-style: italic;
+        }
+
+        /* --- Error message --- */
+        .error-msg {
+            color: #c0392b;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 8px 12px;
+            background: rgba(192, 57, 43, 0.08);
+            border-radius: var(--radius-sm);
+            display: none;
+            border: 1px solid rgba(192, 57, 43, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .error-msg.visible {
+            display: block;
+        }
+
+        /* --- Responsive adjustments --- */
+        @media (min-width: 420px) {
+            .input-row {
+                flex-direction: row;
+                gap: 12px;
+            }
+            .input-row .input-group {
+                flex: 1;
+            }
+            .astro-widget {
+                padding: 8px 4px 16px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            body {
+                padding: 4px;
+            }
+            .astro-widget h2 {
+                font-size: 1.15rem;
+            }
+            .button-group button {
+                font-size: 0.8rem;
+                padding: 7px 10px;
+            }
+            .result-row {
+                font-size: 0.82rem;
+            }
+            .result-card {
+                padding: 8px 10px;
+            }
+        }
+
+        /* --- Accessibility: focus-visible --- */
+        .button-group button:focus-visible,
+        .input-group input:focus-visible {
+            outline: 2px solid var(--accent-blue);
+            outline-offset: 2px;
+        }
+
+        /* --- Reduced motion preference --- */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="astro-widget" role="application" aria-label="Sun and Moon Ecliptic Position Calculator">
+        <h2>Epicycle Parameters Calculator</h2>
+        <p class="subtitle">Using Hipparchus' Method of Three Observations</p>
+        
+        <!-- Input Element goes here -->
+        <form class="astro-form" id="astroForm" autocomplete="off">
+    <div class="input-row">
+        <div class="input-group">
+            <label for="deferentPeriod">Deferent Period (days)</label>
+            <input type="number" id="deferentPeriod" step="any" required>
+        </div>
+        <div class="input-group">
+            <label for="epicyclePeriod">Epicycle Period (days)</label>
+            <input type="number" id="epicyclePeriod" step="any" required>
+        </div>
+    </div>
+    <div class="input-row">
+        <div class="input-group">
+            <label for="obs1DateTime">Observation 1 Date/Time</label>
+            <input type="datetime-local" id="obs1DateTime" required>
+        </div>
+        <div class="input-group">
+            <label for="obs1Longitude">Observation 1 Longitude</label>
+            <input type="number" id="obs1Longitude" step="any" required>
+        </div>
+    </div>
+    <div class="input-row">
+        <div class="input-group">
+            <label for="obs2DateTime">Observation 2 Date/Time</label>
+            <input type="datetime-local" id="obs2DateTime" required>
+        </div>
+        <div class="input-group">
+            <label for="obs2Longitude">Observation 2 Longitude</label>
+            <input type="number" id="obs2Longitude" step="any" required>
+        </div>
+    </div>
+    <div class="input-row">
+        <div class="input-group">
+            <label for="obs3DateTime">Observation 3 Date/Time</label>
+            <input type="datetime-local" id="obs3DateTime" required>
+        </div>
+        <div class="input-group">
+            <label for="obs3Longitude">Observation 3 Longitude</label>
+            <input type="number" id="obs3Longitude" step="any" required>
+        </div>
+    </div>
+    <div class="button-group">
+        <button type="submit" class="btn-primary" id="calcButton">Calculate</button>
+    </div>
+</form>
+
+        <div class="error-msg" id="errorMsg" role="alert"></div>
+
+        <!-- Results go here -->
+        <div class="results" aria-live="polite">
+    <div class="result-card">
+        <h3>Epicycle</h3>
+        <div class="result-row">
+            <span class="label">Radius</span>
+            <span class="value" id="epicycleRadius">--</span>
+        </div>
+        <div class="result-row">
+           <span class="label">Mean Anomaly</span>
+           <span class="value" id="meanAnomaly">--</span>
+       </div>
+       <div class="result-row">
+            <span class="label">Equation of Center</span>
+            <span class="value" id="equationOfCenter">--</span>
+        </div>
+    </div>
+    
+    <div class="result-card">
+        <h3>Deferent</h3>
+        <div class="result-row">
+            <span class="label">Mean Longitude</span>
+            <span class="value" id="meanLongitude">--</span>
+        </div>
+    </div>
+</div>
+ 
+       <!-- Drawing goes here-->
+
+         <div class="canvas-container" id="canvasContainer">
+            <canvas id="canvas" aria-label="Diagram showing the Moon's position around the Earth on the ecliptic plane"></canvas>
+        </div>
+
+    </div>
+
+  
+    <script>
+       (function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  var form = $('astroForm');
+  var canvasContainer = $('canvasContainer');
+  var canvas = $('canvas');
+  var errorMsg = $('errorMsg');
+
+  var inputs = {
+    deferentPeriod: $('deferentPeriod'),
+    epicyclePeriod: $('epicyclePeriod'),
+    obs1DateTime: $('obs1DateTime'),
+    obs1Longitude: $('obs1Longitude'),
+    obs2DateTime: $('obs2DateTime'),
+    obs2Longitude: $('obs2Longitude'),
+    obs3DateTime: $('obs3DateTime'),
+    obs3Longitude: $('obs3Longitude')
+  };
+
+  var resultEls = {
+    epicycleRadius: $('epicycleRadius'),
+    meanAnomaly: $('meanAnomaly'),
+    equationOfCenter: $('equationOfCenter'),
+    meanLongitude: $('meanLongitude')
+  };
+
+  var DEG2RAD = Math.PI / 180;
+  var RAD2DEG = 180 / Math.PI;
+  var canvasCSSSize = 300;
+
+  function degToRad(deg) { return deg * DEG2RAD; }
+  function radToDeg(rad) { return rad * RAD2DEG; }
+
+  function normalizeDeg(deg) {
+    deg %= 360;
+    return deg < 0 ? deg + 360 : deg;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function fmtSignedDeg(deg) {
+    return (deg >= 0 ? '+' : '') + deg.toFixed(3) + '°';
+  }
+
+  function fmtLon(deg) {
+    return normalizeDeg(deg).toFixed(3) + '°';
+  }
+
+  function parseDate(dateString) {
+    var ms = Date.parse(dateString);
+    return Number.isFinite(ms) ? ms : NaN;
+  }
+
+  function calculateParameters(deferentPeriod, epicyclePeriod, t1, t2, t3, l1, l2, l3) {
+
+    // Angular speeds (radians per day)
+    const w_d = (2 * Math.PI) / deferentPeriod;
+    const w_e = (2 * Math.PI) / epicyclePeriod;
+
+    //Arcs of motion of the planet on the epicycle (relative to the perigee)
+    const a1 = w_e * (t2 - t1);
+    const a2 = w_e * (t3 - t2);
+
+    // Arcs of motion planet observed from the center of the deferent (relative to perigee)
+    const p1 = (l2 - l1) - w_d * (t2 - t1);
+    const p2 = (l3 - l2) - w_d * (t3 - t2);
+
+    const W = Math.sin(p1) * Math.sin(a2 + p2) - Math.sin(p2) * Math.sin(a1 + p1);
+
+    const X = Math.sin(a1 + p1) * Math.cos(p2) + Math.sin(a2 + p2) * Math.cos(p1) - Math.sin(a1 + a2 + p1 + p2);
+
+    const equationOfCenter = Math.atan(W / X)
+
+    const Y = Math.sin(equationOfCenter) * Math.sin(a1 + p1);
+
+    const Z = Math.sin(equationOfCenter) * Math.cos(a1 + p1) + Math.sin(p1 - equationOfCenter);
+
+    const meanAnomaly = Math.atan2(Y, Z) - equationOfCenter;
+
+    const radius = Math.sin(equationOfCenter) / Math.sin(equationOfCenter + meanAnomaly);
+
+    const meanLongitude = l2 - equationOfCenter;
+
+    return {
+        epicycle: {
+            radius: radius,
+            meanAnomaly: meanAnomaly,
+            equationOfCenter: equationOfCenter
+        },
+        deferent: {
+            meanLongitude: meanLongitude
+        }
+    };
+
+}
+
+  function drawCanvas() {
+    var ctx = canvas.getContext('2d');
+    var size = canvasCSSSize;
+    var cx = size / 2;
+    var cy = size / 2;
+
+    ctx.fillStyle = '#fbfbfb';
+    ctx.fillRect(0, 0, size, size);
+
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, size * 0.35, 0, 2 * Math.PI);
+    ctx.stroke();
+  }
+
+  function resizeCanvas() {
+    var dpr = window.devicePixelRatio || 1;
+    var cssSize = clamp(canvasContainer.clientWidth || 300, 200, 420);
+    canvasCSSSize = cssSize;
+    canvas.style.width = cssSize + 'px';
+    canvas.style.height = cssSize + 'px';
+    canvas.width = Math.round(cssSize * dpr);
+    canvas.height = Math.round(cssSize * dpr);
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawCanvas();
+  }
+
+  function updateResults(data) {
+    resultEls.epicycleRadius.textContent = data.epicycle.radius.toFixed(5);
+    resultEls.meanAnomaly.textContent = fmtLon(radToDeg(data.epicycle.meanAnomaly));
+    resultEls.equationOfCenter.textContent = fmtSignedDeg(radToDeg(data.epicycle.equationOfCenter));
+    resultEls.meanLongitude.textContent = fmtLon(radToDeg(data.deferent.meanLongitude));
+    drawCanvas();
+  }
+
+  function showError(message) {
+    errorMsg.textContent = message;
+    errorMsg.classList.add('visible');
+  }
+
+  function hideError() {
+    errorMsg.classList.remove('visible');
+  }
+
+  function calculateAndRender() {
+    hideError();
+
+    try {
+      var deferentPeriod = parseFloat(inputs.deferentPeriod.value);
+      var epicyclePeriod = parseFloat(inputs.epicyclePeriod.value);
+      var t1 = parseDate(inputs.obs1DateTime.value) / 86400000;
+      var t2 = parseDate(inputs.obs2DateTime.value) / 86400000;
+      var t3 = parseDate(inputs.obs3DateTime.value) / 86400000;
+      var l1 = degToRad(parseFloat(inputs.obs1Longitude.value));
+      var l2 = degToRad(parseFloat(inputs.obs2Longitude.value));
+      var l3 = degToRad(parseFloat(inputs.obs3Longitude.value));
+
+      if (!(deferentPeriod > 0) || !(epicyclePeriod > 0)) {
+        throw new Error('Periods must be greater than zero.');
+      }
+      if (![t1, t2, t3].every(Number.isFinite)) {
+        throw new Error('Please enter valid observation date/times.');
+      }
+      if (!(t1 < t2 && t2 < t3)) {
+        throw new Error('Observation times must be in increasing order.');
+      }
+      if (![l1, l2, l3].every(Number.isFinite)) {
+        throw new Error('Please enter valid longitudes in degrees.');
+      }
+
+      var data = calculateParameters(deferentPeriod, epicyclePeriod, t1, t2, t3, l1, l2, l3);
+      updateResults(data);
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  function setInitialValues() {
+    const preset = "moon";
+    if(preset === "sun"){
+        inputs.deferentPeriod.value = '365.24219';
+        inputs.epicyclePeriod.value = '365.25963';
+        inputs.obs1DateTime.value = '2001-03-20T13:31';
+        inputs.obs2DateTime.value = '2001-06-21T07:37';
+        inputs.obs3DateTime.value = '2001-09-22T23:04';
+        inputs.obs1Longitude.value = '0';
+        inputs.obs2Longitude.value = '90';
+        inputs.obs3Longitude.value = '180';
+    }
+
+    if(preset === "moon"){
+        inputs.deferentPeriod.value = '27.321582';
+        inputs.epicyclePeriod.value = '27.554549';
+        inputs.obs1DateTime.value = '2001-01-09T20:22';
+        inputs.obs2DateTime.value = '2001-07-05T14:56';
+        inputs.obs3DateTime.value = '2001-12-30T10:30';
+        inputs.obs1Longitude.value = '109.637';
+        inputs.obs2Longitude.value = '283.648';
+        inputs.obs3Longitude.value = '98.775';
+    }
+  }
+
+  function initialize() {
+    resizeCanvas();
+    setInitialValues();
+    calculateAndRender();
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    calculateAndRender();
+  });
+
+  window.addEventListener('resize', resizeCanvas);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
+  }
+})();
+    </script>
+</body>
+</html>

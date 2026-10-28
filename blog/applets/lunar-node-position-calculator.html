@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+    <title>Lunar Node Position Calculator</title>
+    <style>
+        :root {
+            --text-primary: #1e1e1e;
+            --text-secondary: #555555;
+            --text-muted: #888888;
+            --accent-blue: #0077cc;
+            --accent-blue-glow: rgba(0, 119, 204, 0.15);
+            --sun-yellow: #e6a800;
+            --moon-gray: #5f6b7a;
+            --earth-blue: #2c7be0;
+            --border-color: #d0d0d0;
+            --input-bg: #ffffff;
+            --card-bg: #f8f8f8;
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                'Helvetica Neue', Arial, sans-serif;
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 10px;
+            --touch-target: 42px;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: transparent;
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 8px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            margin: 0;
+        }
+
+        .astro-widget {
+            width: 100%;
+            max-width: 460px;
+            background: transparent;
+            padding: 4px 0 12px;
+        }
+
+        .astro-widget h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 4px;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        .astro-widget .subtitle {
+            font-size: 0.8rem;
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            font-weight: 400;
+        }
+
+        .astro-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .input-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+        }
+          
+        .input-group input[type='text'],
+        .input-group input[type='number'],
+        .input-group input[type='date'],
+        .input-group input[type='time'],
+        .input-group input[type='datetime-local'] {
+            width: 100%;
+            font-size: 1rem;
+            padding: 9px 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            appearance: none;
+            -webkit-appearance: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            min-height: var(--touch-target);
+        }
+         
+        .input-group input[type='text']:focus,
+        .input-group input[type='number']:focus,
+        .input-group input[type='date']:focus,
+        .input-group input[type='time']:focus,
+        .input-group input[type='datetime-local']:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--accent-blue-glow);
+        }
+
+        .input-group input::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .input-group.checkbox-group {
+            flex-direction: row;
+            align-items: center;
+            gap: 8px;
+            min-height: var(--touch-target);
+            padding: 6px 0;
+        }
+        .input-group.checkbox-group label {
+            margin: 0;
+            text-transform: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            letter-spacing: 0;
+            cursor: pointer;
+            flex: 1;
+        }
+        .input-group input[type='checkbox'] {
+            width: 20px;
+            height: 20px;
+            min-height: auto;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .button-group button {
+            flex: 1 1 auto;
+            min-height: var(--touch-target);
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 8px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease,
+                transform 0.1s ease, box-shadow 0.2s ease;
+            font-family: var(--font-family);
+            letter-spacing: 0.02em;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+            background: #fafafa;
+            color: var(--text-primary);
+        }
+
+        .button-group button:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: var(--accent-blue) !important;
+            color: #ffffff !important;
+            border-color: var(--accent-blue) !important;
+            font-weight: 700;
+        }
+
+        .btn-primary:hover {
+            background: #0066b3 !important;
+            box-shadow: 0 0 12px var(--accent-blue-glow);
+        }
+
+        .btn-secondary:hover {
+            background: #f0f0f0;
+            border-color: #aaa;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            margin: 12px auto 14px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background: #fbfbfb;
+            aspect-ratio: 1 / 1;
+        }
+
+        #moonCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: default;
+        }
+
+        .results {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            border: 1px solid #eaeaea;
+        }
+
+        .result-card h3 {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2px 0;
+            font-size: 0.88rem;
+        }
+
+        .result-row .label {
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .result-row .value {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.01em;
+        }
+
+        .result-row .value.sun {
+            color: var(--sun-yellow);
+        }
+
+        .result-row .value.moon {
+            color: var(--moon-gray);
+        }
+
+        .moon-phase-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            padding-top: 4px;
+            font-style: italic;
+        }
+
+        .error-msg {
+            color: #c0392b;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 8px 12px;
+            background: rgba(192, 57, 43, 0.08);
+            border-radius: var(--radius-sm);
+            display: none;
+            border: 1px solid rgba(192, 57, 43, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .error-msg.visible {
+            display: block;
+        }
+
+        @media (min-width: 420px) {
+            .input-row {
+                flex-direction: row;
+                gap: 12px;
+            }
+            .input-row .input-group {
+                flex: 1;
+            }
+            .astro-widget {
+                padding: 8px 4px 16px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            body {
+                padding: 4px;
+            }
+            .astro-widget h2 {
+                font-size: 1.15rem;
+            }
+            .button-group button {
+                font-size: 0.8rem;
+                padding: 7px 10px;
+            }
+            .result-row {
+                font-size: 0.82rem;
+            }
+            .result-card {
+                padding: 8px 10px;
+            }
+        }
+
+        .button-group button:focus-visible,
+        .input-group input:focus-visible {
+            outline: 2px solid var(--accent-blue);
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class='astro-widget' role='application' aria-label='Epicycle Position Calculator'>
+        <h2>Lunar Node Position Calculator</h2>
+        <p class='subtitle'>Calculate the Position of the lunar nodes at a given eclipse</p>
+        
+        <form class='astro-form' id='astroForm' autocomplete='off'>
+    <div class='input-row'>
+       <div class='input-group'>
+            <label for='magnitude'>Magnitude of Eclipse</label>
+            <input type='number' id='magnitude' step='any' required>
+        </div>
+    </div>
+    <div class='input-row'>
+       <div class='input-group'>
+            <label for='longitude'>Longitude of the Moon</label>
+            <input type='number' id='longitude' step='any' required>
+        </div>
+    </div>
+    <div class='input-row'>
+       <div class='input-group'>
+            <label for='moon-radius'>Moon Radius</label>
+            <input type='number' id='moon-radius' step='any' required>
+        </div>
+    </div>
+    <div class='input-row'>
+       <div class='input-group'>
+            <label for='shadow-radius'>Shadow Radius</label>
+            <input type='number' id='shadow-radius' step='any' required>
+        </div>
+    </div>
+    <div class='input-row'>
+       <div class='input-group'>
+            <label for='moon-distance'>Distance to the Moon</label>
+            <input type='number' id='moon-distance' step='any' required>
+        </div>
+    </div>
+    <div class='input-row'>
+       <div class='input-group'>
+            <label for='orbital-inclination'>Orbital Inclination</label>
+            <input type='number' id='orbital-inclination' step='any' required>
+        </div>
+    </div>
+    <div class='input-row'>
+       <div class='input-group checkbox-group'>
+            <label for='is-latitude-positive'>Latitude Positive (North)</label>
+            <input type='checkbox' id='is-latitude-positive' checked>
+        </div>
+       <div class='input-group checkbox-group'>
+            <label for='is-latitude-increasing'>Latitude Increasing</label>
+            <input type='checkbox' id='is-latitude-increasing' checked>
+        </div>
+    </div>
+
+    <div class='button-group'>
+        <button type='submit' class='btn-primary' id='calcButton'>Calculate</button>
+    </div>
+</form>
+
+        <div class='error-msg' id='errorMsg' role='alert'></div>
+
+        <div class='results' aria-live='polite'>
+    <div class='result-card'>
+        <h3>Parameters</h3>
+        <div class='result-row'>
+            <span class='label'>Latitude of the Moon</span>
+            <span class='value' id='latitude'>--</span>
+        </div>
+        <div class='result-row'>
+           <span class='label'>Longitude of Ascending Node</span>
+           <span class='value' id='longitude-asc'>--</span>
+       </div>
+        <div class='result-row'>
+           <span class='label'>Longitude of Descending Node</span>
+           <span class='value' id='longitude-desc'>--</span>
+       </div>
+    </div>
+    
+</div>
+ 
+         <div class='canvas-container' id='canvasContainer'>
+            <canvas id='canvas' aria-label='Diagram showing the Moon's position around the Earth on the ecliptic plane'></canvas>
+        </div>
+
+    </div>
+
+  
+    <script>
+       (function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  var form = $('astroForm');
+  var canvasContainer = $('canvasContainer');
+  var canvas = $('canvas');
+  var errorMsg = $('errorMsg');
+
+  var inputs = {
+    magnitude: $('magnitude'),
+    longitude: $('longitude'),
+    moonRadius: $('moon-radius'),
+    shadowRadius: $('shadow-radius'),
+    moonDistance: $('moon-distance'),
+    inclination: $('orbital-inclination'),
+    isLatitudePositive: $('is-latitude-positive'),
+    isLatitudeIncreasing: $('is-latitude-increasing')
+  };
+
+  var resultEls = {
+    latitude: $('latitude'),
+    descNode: $('longitude-desc'),
+    ascNode: $('longitude-asc')
+  };
+
+  var DEG2RAD = Math.PI / 180;
+  var RAD2DEG = 180 / Math.PI;
+  var canvasCSSSize = 300;
+
+  function degToRad(deg) { return deg * DEG2RAD; }
+  function radToDeg(rad) { return rad * RAD2DEG; }
+
+  function normalizeDeg(deg) {
+    deg %= 360;
+    return deg < 0 ? deg + 360 : deg;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function fmtSignedDeg(deg) {
+    return (deg >= 0 ? '+' : '') + deg.toFixed(3) + '\u00b0';
+  }
+
+  function fmtLon(deg) {
+    return normalizeDeg(deg).toFixed(3) + '\u00b0';
+  }
+
+  function calculateNodePosition(magnitude, longitude, moonRadius, shadowRadius, distance, inclination, isLatitudePositive, isLatitudeIncreasing) {
+    var latSign = isLatitudePositive ? 1 : -1;
+    var longSign = isLatitudeIncreasing ? 1 : -1;
+
+    var centre = moonRadius + shadowRadius - 2 * moonRadius * magnitude;
+    var latitude =  latSign * Math.abs(centre / distance);
+    var sinArg = Math.sin(latitude) / Math.sin(inclination);
+    sinArg = clamp(sinArg, -1, 1);
+    var arg = Math.asin(sinArg);
+    var node = Math.atan2(Math.sin(arg), longSign * Math.cos(arg));
+    var ascNode = longitude - node;
+    var descNode = ascNode + Math.PI;
+
+    return {
+      latitude: latitude,
+      ascendingNode: ascNode,
+      descendingNode: descNode
+    };
+  }
+
+  function drawCanvas() {
+    var ctx = canvas.getContext('2d');
+    var size = canvasCSSSize;
+    var cx = size / 2;
+    var cy = size / 2;
+
+    ctx.fillStyle = '#fbfbfb';
+    ctx.fillRect(0, 0, size, size);
+
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, size * 0.35, 0, 2 * Math.PI);
+    ctx.stroke();
+  }
+
+  function resizeCanvas() {
+    var dpr = window.devicePixelRatio || 1;
+    var cssSize = clamp(canvasContainer.clientWidth || 300, 200, 420);
+    canvasCSSSize = cssSize;
+    canvas.style.width = cssSize + 'px';
+    canvas.style.height = cssSize + 'px';
+    canvas.width = Math.round(cssSize * dpr);
+    canvas.height = Math.round(cssSize * dpr);
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawCanvas();
+  }
+
+  function updateResults(data) {
+    resultEls.latitude.textContent = fmtSignedDeg(radToDeg(data.latitude));
+    resultEls.ascNode.textContent = fmtLon(radToDeg(data.ascendingNode));
+    resultEls.descNode.textContent = fmtLon(radToDeg(data.descendingNode));
+    drawCanvas();
+  }
+
+  function showError(message) {
+    errorMsg.textContent = message;
+    errorMsg.classList.add('visible');
+  }
+
+  function hideError() {
+    errorMsg.classList.remove('visible');
+  }
+
+  function calculateAndRender() {
+    hideError();
+
+    try {
+      var magnitude = parseFloat(inputs.magnitude.value);
+      var longitude = parseFloat(degToRad(inputs.longitude.value));
+      var moonRadius = parseFloat(inputs.moonRadius.value);
+      var shadowRadius = parseFloat(inputs.shadowRadius.value);
+      var moonDistance = parseFloat(inputs.moonDistance.value);
+      var inclination = parseFloat(degToRad(inputs.inclination.value));
+      var isLatitudePositive = inputs.isLatitudePositive.checked;
+      var isLatitudeIncreasing = inputs.isLatitudeIncreasing.checked;
+
+      if ([magnitude, longitude, moonRadius, shadowRadius, moonDistance, inclination].some(isNaN)) {
+        throw new Error('Please enter valid numbers in all fields.');
+      }
+
+      var data = calculateNodePosition(
+        magnitude,
+        longitude,
+        moonRadius,
+        shadowRadius,
+        moonDistance,
+        inclination,
+        isLatitudePositive,
+        isLatitudeIncreasing
+      );
+      updateResults(data);
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  function setInitialValues() {
+    inputs.magnitude.value = '0.4947';
+    inputs.longitude.value = '283.648';
+    inputs.moonRadius.value = '1737';
+    inputs.shadowRadius.value = '4546.62';
+    inputs.moonDistance.value = '407695';
+    inputs.inclination.value = '5.14';
+    inputs.isLatitudePositive.checked = true;
+    inputs.isLatitudeIncreasing.checked = true;
+  }
+
+  function initialize() {
+    resizeCanvas();
+    setInitialValues();
+    calculateAndRender();
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    calculateAndRender();
+  });
+
+  window.addEventListener('resize', resizeCanvas);
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
+  }
+})();
+    </script>
+</body>
+</html>

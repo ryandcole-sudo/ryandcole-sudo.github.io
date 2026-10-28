@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lunar Eclipse Prediction</title>
+<style>
+  :root{
+    --bg:#0e1117; --panel:#161b25; --line:#2a3242; --text:#e6ebf5;
+    --muted:#93a0b6; --accent:#7db4ff;
+    --total:#ff8a5c; --partial:#ffd166; --penumbral:#9fb3c8;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:2rem 1rem; background:var(--bg); color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:1.5rem;margin:0 0 .25rem}
+  .sub{color:var(--muted);font-size:.9rem;margin:0 0 1.5rem}
+  .controls{
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:1rem 1.1rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-end;
+  }
+  .controls label{display:flex;flex-direction:column;gap:.35rem;font-size:.82rem;color:var(--muted)}
+  .controls input[type=date]{
+    background:#0e1117;border:1px solid var(--line);color:var(--text);
+    border-radius:8px;padding:.5rem .6rem;font:inherit;font-size:.95rem;
+    color-scheme:dark;
+  }
+  .controls input[type=date]:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .controls button{
+    background:var(--accent);color:#0b1220;border:0;border-radius:8px;
+    padding:.6rem 1.2rem;font:inherit;font-weight:600;cursor:pointer;
+  }
+  .controls button:hover{filter:brightness(1.08)}
+  .controls button:active{transform:translateY(1px)}
+  #summary{margin:1.25rem 0 .5rem;font-size:.92rem;color:var(--muted)}
+  #summary .warn{color:#ffb4a2}
+  #summary .err{color:#ff7b7b}
+  table{
+    width:100%;border-collapse:collapse;background:var(--panel);
+    border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:.92rem;
+  }
+  table caption{caption-side:top;text-align:left;color:var(--muted);font-size:.82rem;padding:.5rem .2rem}
+  th,td{padding:.55rem .8rem;text-align:left;border-bottom:1px solid var(--line)}
+  th{font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  tr:last-child td{border-bottom:0}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  tbody tr:hover{background:#1c2331}
+  .t-T{color:var(--total);font-weight:600}
+  .t-P{color:var(--partial);font-weight:600}
+  .t-N{color:var(--penumbral)}
+  .hidden{display:none}
+  footer{color:var(--muted);font-size:.78rem;margin-top:1.5rem;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Lunar Eclipse Prediction</h1>
+  <p class="sub">
+    All times are UTC. Lunation numbers count full moons from the start date
+    (the first full moon on or after the start date is lunation&nbsp;0).
+  </p>
+
+  <div class="controls">
+    <label>Start date (UTC)
+      <input type="date" id="startDate" value="2024-01-01">
+    </label>
+    <label>End date (UTC)
+      <input type="date" id="endDate" value="2026-12-31">
+    </label>
+    <button type="button" id="goBtn">Find eclipses</button>
+  </div>
+
+  <div id="summary"></div>
+
+  <table id="results" class="hidden">
+    <caption>
+      Type:
+      <span class="t-N">N = penumbral</span> &middot;
+      <span class="t-P">P = partial</span> &middot;
+      <span class="t-T">T = total</span>
+    </caption>
+    <thead>
+      <tr>
+        <th>Date &amp; time (UTC)</th>
+        <th class="num">Lunation</th>
+        <th class="num">Magnitude</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <footer>
+    Model: simple epicycle theory for the Sun and Moon (epoch 2001-01-01 00:00 UTC),
+    with the Moon's latitude found from its distance to the nodal line.
+    Eclipse magnitude is <code>2 &times; (0.875 &minus; |latitude|)</code>; a full moon is
+    listed when its longitude is within 18&deg; of a node.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- math helpers ---------- */
+  var RAD = Math.PI / 180;
+  function rad(d) { return d * RAD; }
+  function deg(r) { return r / RAD; }
+  function angle(x) { return ((x % 360) + 360) % 360; }
+  function angleDiff(x, y) {
+    var diff = Math.abs(x - y) % 360;
+    return Math.min(diff, 360 - diff);
+  }
+
+  /* ---------- astronomical constants ---------- */
+  var SUN_R = 0.03337, SUN_T = 365.24219, SUN_TA = 365.25963;
+  var SUN_W = 360 / SUN_T;
+  var SUN_LM_EP = 280.703, SUN_APO_EP = 103.248;
+
+  var MOON_R = 0.08509, MOON_T = 27.321582, MOON_TA = 27.554549, MOON_TD = 27.212221;
+  var MOON_W = 360 / MOON_T, MOON_WD = 360 / MOON_TD;
+  var MOON_LM_EP = 354.492, MOON_APO_EP = 305.922;
+  var DNODE_EP = 286.29, MOON_I = 5.14;
+
+  var W_E = MOON_W - SUN_W;
+  var T_SYN = 360 / W_E;
+  var ELONG_M = angle(SUN_LM_EP - angle(MOON_LM_EP - 180));
+
+  var EPOCH_MS = Date.UTC(2001, 0, 1, 0, 0, 0);
+  var DAY_MS = 86400000;
+
+  /* ---------- epicycle model ---------- */
+  function epiCalc(T, Ta, radius, epochLm, apogeeEp, days) {
+    var wd = 360 / T - 360 / Ta;
+    var apogee = apogeeEp + wd * days;
+    var meanLong = angle(epochLm + days / T * 360);
+    var epiAno = meanLong - apogee;
+    var x = 1 + radius * Math.cos(rad(epiAno));
+    var y = radius * Math.sin(rad(epiAno));
+    var eq = deg(Math.atan2(y, x));
+    var ano = angle(epiAno - eq);
+    return angle(ano + apogee);
+  }
+
+  /* ---------- find n-th full moon ---------- */
+  function findMoon(n) {
+    var days = T_SYN * n + ELONG_M / W_E;
+    for (var i = 0; i < 5; i++) {
+      var moonLt = epiCalc(MOON_T, MOON_TA, MOON_R, MOON_LM_EP, MOON_APO_EP, days);
+      var sunLt  = epiCalc(SUN_T,  SUN_TA,  SUN_R,  SUN_LM_EP,  SUN_APO_EP,  days);
+      var oppLt  = angle(moonLt - 180);
+      var elongT = angle(sunLt - oppLt);
+      if (elongT > 180) elongT -= 360;
+      days += elongT / W_E;
+    }
+    return days;
+  }
+
+  /* ---------- check eclipse at a given full moon ---------- */
+  function eclipseAt(days) {
+    var wd = MOON_W - MOON_WD;
+    var dnode = angle(DNODE_EP + wd * days);
+    var anode = angle(dnode - 180);
+    var sunLt = epiCalc(SUN_T, SUN_TA, SUN_R, SUN_LM_EP, SUN_APO_EP, days);
+    var argD = angleDiff(sunLt, dnode);
+    var argA = angleDiff(sunLt, anode);
+    var argLat = Math.min(argD, argA);
+    var moonLat = deg(Math.asin(Math.sin(rad(argLat)) * Math.sin(rad(MOON_I))));
+    var mag = 2 * (0.875 - moonLat);
+    if (argLat > 18) return null;
+    var type = "N";
+    if (mag > 0) type = "P";
+    if (mag > 1) type = "T";
+    return { days: days, mag: mag, type: type };
+  }
+
+  /* ---------- date helpers ---------- */
+  var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun",
+                "Jul","Aug","Sep","Oct","Nov","Dec"];
+  function pad2(n) { return (n < 10 ? "0" : "") + n; }
+
+  function daysToMs(days) {
+    var ms = EPOCH_MS + days * DAY_MS;
+    return Math.round(ms / 1000) * 1000;
+  }
+
+  function formatDateTime(ms) {
+    var d = new Date(ms);
+    return MONTHS[d.getUTCMonth()] + " " + pad2(d.getUTCDate()) + ", " +
+           d.getUTCFullYear() + " at " +
+           pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + ":" +
+           pad2(d.getUTCSeconds()) + " UTC";
+  }
+
+  function parseDateInput(value, endOfDay) {
+    var parts = value.split("-");
+    var y = parseInt(parts[0], 10);
+    var mo = parseInt(parts[1], 10);
+    var d = parseInt(parts[2], 10);
+    if (isNaN(y) || isNaN(mo) || isNaN(d)) return NaN;
+    var base = Date.UTC(y, mo - 1, d);
+    return endOfDay ? base + DAY_MS - 1 : base;
+  }
+
+  /* ---------- search for eclipses in a date range ---------- */
+  var MAX_LUNATIONS = 5000;
+
+  function findEclipsesInRange(startDays, endDays) {
+    // Estimate the lunation index whose full moon falls near startDays,
+    // starting a few lunations earlier for safety.
+    var n = Math.floor((startDays - ELONG_M / W_E) / T_SYN) - 5;
+
+    // Advance to the first full moon on or after startDays.
+    var safety = 0;
+    while (findMoon(n) < startDays && safety++ < 10000) n++;
+
+    var n0 = n;
+    var eclipses = [];
+    var truncated = false;
+    var count = 0;
+
+    while (count < MAX_LUNATIONS) {
+      var days = findMoon(n);
+      if (days > endDays) break;
+      var ev = eclipseAt(days);
+      if (ev) {
+        eclipses.push({
+          days: ev.days,
+          lunation: n - n0,
+          mag: ev.mag,
+          type: ev.type
+        });
+      }
+      n++;
+      count++;
+    }
+
+    if (count >= MAX_LUNATIONS) truncated = true;
+
+    return { eclipses: eclipses, truncated: truncated };
+  }
+
+  /* ---------- UI wiring ---------- */
+  var startInput = document.getElementById("startDate");
+  var endInput   = document.getElementById("endDate");
+  var goBtn      = document.getElementById("goBtn");
+  var summary    = document.getElementById("summary");
+  var table      = document.getElementById("results");
+  var tbody      = table.querySelector("tbody");
+
+  function showMessage(html) {
+    summary.innerHTML = html;
+    table.classList.add("hidden");
+    tbody.innerHTML = "";
+  }
+
+  function run() {
+    try {
+      var startValue = startInput.value;
+      var endValue   = endInput.value;
+
+      if (!startValue || !endValue) {
+        showMessage("Please choose both a start date and an end date.");
+        return;
+      }
+
+      var startMs = parseDateInput(startValue, false);
+      var endMs   = parseDateInput(endValue, true);
+
+      if (isNaN(startMs) || isNaN(endMs)) {
+        showMessage('<span class="err">Could not parse the dates. Please use the date pickers.</span>');
+        return;
+      }
+      if (endMs <= startMs) {
+        showMessage("The end date must be after the start date.");
+        return;
+      }
+
+      var startDays = (startMs - EPOCH_MS) / DAY_MS;
+      var endDays   = (endMs   - EPOCH_MS) / DAY_MS;
+
+      var result = findEclipsesInRange(startDays, endDays);
+      var list = result.eclipses;
+
+      if (list.length === 0) {
+        showMessage("No lunar eclipses were found between " +
+                    formatDateTime(startMs) + " and " + formatDateTime(endMs) + ".");
+        return;
+      }
+
+      var rows = "";
+      for (var i = 0; i < list.length; i++) {
+        var e = list[i];
+        var stamp = formatDateTime(daysToMs(e.days));
+        var mag = e.mag.toFixed(4);
+        var label = e.type === "T" ? "Total" :
+                    e.type === "P" ? "Partial" : "Penumbral";
+        rows += '<tr>' +
+                  '<td>' + stamp + '</td>' +
+                  '<td class="num">' + e.lunation + '</td>' +
+                  '<td class="num">' + mag + '</td>' +
+                  '<td class="t-' + e.type + '">' + label + ' (' + e.type + ')</td>' +
+                '</tr>';
+      }
+      tbody.innerHTML = rows;
+      table.classList.remove("hidden");
+
+      var totals = 0, partials = 0, penumbral = 0;
+      for (var j = 0; j < list.length; j++) {
+        if (list[j].type === "T") totals++;
+        else if (list[j].type === "P") partials++;
+        else penumbral++;
+      }
+
+      var msg = "Found <strong>" + list.length + "</strong> lunar eclipse" +
+                (list.length === 1 ? "" : "s") + " between " +
+                formatDateTime(startMs) + " and " + formatDateTime(endMs) +
+                " &mdash; " + totals + " total, " + partials + " partial, " +
+                penumbral + " penumbral.";
+      if (result.truncated) {
+        msg += ' <span class="warn">The range was very long, so the search ' +
+               'stopped after ' + MAX_LUNATIONS + ' lunations &mdash; ' +
+               'please narrow the dates for a complete list.</span>';
+      }
+      summary.innerHTML = msg;
+    } catch (err) {
+      showMessage('<span class="err">Something went wrong: ' +
+                  (err && err.message ? err.message : String(err)) + '</span>');
+      if (window.console && console.error) console.error(err);
+    }
+  }
+
+  goBtn.addEventListener("click", run);
+
+  // Also trigger a search on Enter inside the date inputs.
+  startInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); run(); }
+  });
+  endInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); run(); }
+  });
+
+  // Initial run
+  run();
+})();
+</script>
+</body>
+</html>
