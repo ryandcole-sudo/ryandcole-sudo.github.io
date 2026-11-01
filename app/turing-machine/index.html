@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Turing Machine Emulator</title>
+<style>
+:root{--bg:#f4f3ef;--pn:#fff;--tx:#1d1d1f;--mu:#6b6b74;--bd:#dcdad3;--ac:#2f5bd8;--ac2:#e6edfc;--ok:#1d8a4a;--wn:#a86200;--er:#c4302b;--cell:#faf9f6;--hd:#fff1bd;--hb:#e0a800;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121316;--pn:#1c1d22;--tx:#ececf0;--mu:#9b9ba7;--bd:#2f3039;--ac:#7c9cff;--ac2:#232a42;--ok:#4cc27a;--wn:#e3a53a;--er:#ff6b63;--cell:#15161a;--hd:#3b3414;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121316;--pn:#1c1d22;--tx:#ececf0;--mu:#9b9ba7;--bd:#2f3039;--ac:#7c9cff;--ac2:#232a42;--ok:#4cc27a;--wn:#e3a53a;--er:#ff6b63;--cell:#15161a;--hd:#3b3414;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:14px;max-width:1280px;margin-inline:auto}
+code,pre,textarea,input.m,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+h1{font-size:20px;margin:0 0 10px;letter-spacing:-.01em}
+h2{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin:0 0 8px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+button,select{font:inherit;padding:7px 13px;border:1px solid var(--bd);background:var(--pn);color:var(--tx);border-radius:8px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--ac)}button:disabled{opacity:.45;cursor:default}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600;min-width:92px}
+.sp{display:flex;align-items:center;gap:8px;color:var(--mu);margin-left:auto;font-size:13px}.sp input{width:140px}
+.panel{background:var(--pn);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+#tapep{padding-top:28px}
+#tape{display:flex;gap:3px}
+.c{flex:1;min-width:0;position:relative;text-align:center;border:1px solid var(--bd);background:var(--cell);border-radius:6px;padding:6px 0 3px}
+.c b{display:block;height:26px;font:600 18px/26px ui-monospace,Menlo,Consolas,monospace}
+.c i{font-style:normal;font-size:10px;color:var(--mu)}
+.c.h{background:var(--hd);border-color:var(--hb);box-shadow:0 0 0 1px var(--hb)}
+.c.h::before{content:"▼";position:absolute;top:-19px;left:0;right:0;color:var(--hb);font-size:13px}
+main{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:860px){main{grid-template-columns:1fr}.sp{margin-left:0}}
+.ph{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px}.ph select{flex:1;min-width:0}
+textarea{width:100%;height:380px;resize:vertical;background:var(--cell);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:10px;font-size:13px;line-height:1.5;tab-size:2}
+#diag{list-style:none;padding:0;margin:8px 0 0;font-size:13px}
+#diag li{padding:4px 8px;border-radius:6px;cursor:pointer;margin-bottom:3px;background:var(--cell)}
+#diag .error{color:var(--er)}#diag .warn{color:var(--wn)}#diag .good{color:var(--ok);cursor:default}
+label.in{display:block;margin-bottom:8px;font-size:13px;color:var(--mu)}
+label.in input{display:block;width:100%;margin-top:3px;padding:7px 9px;font-size:14px;background:var(--cell);color:var(--tx);border:1px solid var(--bd);border-radius:8px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:0;font-size:13px}dt{color:var(--mu)}dd{margin:0;overflow-wrap:anywhere}
+.s-run{color:var(--ok)}.s-halt{color:var(--wn)}.s-err{color:var(--er)}
+.o{display:flex;gap:10px;align-items:baseline;margin-bottom:5px;font-size:13px}.o span{color:var(--mu);min-width:70px}
+.o code{overflow-wrap:anywhere;font-size:15px;background:var(--ac2);padding:2px 8px;border-radius:6px;min-height:22px}
+pre{margin:0;max-height:200px;overflow:auto;font-size:12px;color:var(--mu);white-space:pre}
+.mu{color:var(--mu);font-size:13px;margin:0}
+details{font-size:13px;color:var(--mu)}summary{cursor:pointer}details pre{max-height:none;color:var(--tx);margin-top:6px}
+</style></head><body>
+<h1>Turing Machine Emulator</h1>
+<div class="bar">
+ <button id="run" class="pri">▶ Run</button><button id="step">Step</button><button id="rst">↺ Restart</button>
+ <label class="sp">Speed <input id="spd" type="range" min="0" max="100" value="45"><span id="spv" style="min-width:76px"></span></label>
+</div>
+<section class="panel" id="tapep"><div id="tape"></div></section>
+<main>
+ <section class="panel">
+  <div class="ph"><select id="ex" aria-label="Example programs"></select><button id="load">Load file…</button><input id="file" type="file" hidden></div>
+  <textarea id="code" spellcheck="false" aria-label="Program"></textarea>
+  <ul id="diag"></ul>
+  <details style="margin-top:8px"><summary>Syntax cheat sheet</summary><pre>R L E P0 P'a'   2R = twice; join with , or space
+state:           header; macros: name(s,f,x):
+  0 R -> next    pattern commands -> target
+  _ none * any   blank / any symbol
+  ~'ab' not 'a'  anything except
+--- ... ---      config: input output start
+                 stop max_steps alphabet head</pre></details>
+ </section>
+ <div>
+  <section class="panel"><h2>Input</h2><div id="ins"></div></section>
+  <section class="panel"><h2>Machine</h2><dl id="info"></dl></section>
+  <section class="panel"><h2>Output</h2><div id="outs"></div></section>
+  <section class="panel"><h2>Trace (newest first)</h2><pre id="trace"></pre></section>
+ </div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const QS="'(?:\\\\.|[^'\\\\])*'";
+const ATOM=new RegExp('^(?:'+QS+'|\\d|[A-Za-z_]\\w*|\\*)'),SUBS=new RegExp(QS+'|[A-Za-z_]\\w*','g');
+const RES=new Set(['none','any','not','R','L','E','P']);
+const unq=s=>s.slice(1,-1).replace(/\\(.)/g,'$1');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const inA=(C,s)=>C.alpha!==null?[...C.alpha].includes(s):/^[\x20-\x7e]$/.test(s);
+const sh=s=>s===null?'_':s;
+const hit=(p,s)=>{const b=p.k==='none'?s===null:p.k==='any'?true:s!==null&&p.set.has(s);return p.neg?!b:b};
+
+function stripComments(s){let o='',i=0,q=false;
+ while(i<s.length){const c=s[i];
+  if(q){o+=c;if(c==='\\'&&i+1<s.length)o+=s[++i];else if(c==="'"||c==='\n')q=false;i++;continue}
+  if(c==="'"){q=true;o+=c;i++;continue}
+  if(c==='#'||s.startsWith('//',i)){while(i<s.length&&s[i]!=='\n')i++;continue}
+  if(s.startsWith('/*',i)){let j=s.indexOf('*/',i+2);if(j<0)j=s.length-2;o+=s.slice(i,j+2).replace(/[^\n]/g,' ');i=j+2;continue}
+  o+=c;i++}
+ return o}
+function arrow(s){let q=false;for(let i=0;i<s.length;i++){const c=s[i];if(q){if(c==='\\')i++;else if(c==="'")q=false}else if(c==="'")q=true;else if(c==='-'&&s[i+1]==='>')return i}return -1}
+function split(s){const o=[];let d=0,q=false,b='';
+ for(let i=0;i<s.length;i++){const c=s[i];
+  if(q){b+=c;if(c==='\\')b+=s[++i]||'';else if(c==="'")q=false;continue}
+  if(c==="'"){q=true;b+=c}else if(c==='('){d++;b+=c}else if(c===')'){d--;b+=c}
+  else if(c===','&&!d){o.push(b.trim());b=''}else b+=c}
+ if(b.trim()||o.length)o.push(b.trim());return o}
+function call(t){const m=t.trim().match(/^([A-Za-z_]\w*)\s*(?:\(([\s\S]*)\))?$/);if(!m)throw new Error('Bad state reference “'+t+'”');return{name:m[1],args:m[2]===undefined?[]:split(m[2])}}
+function fml(s){const m=s.replace(/\s+/g,'').match(/^([+-]?)(\d*)x(?:([+-])(\d+))?$/);if(!m)return null;
+ const a=(m[1]==='-'?-1:1)*(m[2]===''?1:+m[2]),b=m[3]?(m[3]==='-'?-1:1)*+m[4]:0;return a?{a,b}:null}
+function readPat(s){let neg=false;s=s.trimStart();let m=s.match(/^(?:~|not\b)\s*/);if(m){neg=true;s=s.slice(m[0].length)}
+ m=s.match(ATOM);if(!m)throw new Error('Expected a symbol pattern (use quotes for letters, e.g. ‘a’)');return[{neg,a:m[0]},s.slice(m[0].length)]}
+function cmds(s){const o=[];let m;
+ for(;;){s=s.replace(/^[\s,]+/,'');if(!s)break;
+  if(m=s.match(/^(\d+)?([RL])/)){o.push({t:m[2],n:+(m[1]||1)});s=s.slice(m[0].length)}
+  else if(s[0]==='E'){o.push({t:'E'});s=s.slice(1)}
+  else if(m=s.match(/^P\s*/)){s=s.slice(m[0].length);const a=s.match(ATOM);if(!a)throw new Error('P needs a symbol to print');o.push({t:'P',a:a[0]});s=s.slice(a[0].length)}
+  else throw new Error('Unknown command near “'+s.slice(0,8)+'”')}
+ return o}
+function parseRule(line,ln){const t=line.trim(),i=arrow(t),left=i<0?t:t.slice(0,i),right=i<0?null:t.slice(i+2).trim();
+ if(right==='')throw new Error('Missing state after ->');const[pat,rest]=readPat(left);return{pat,cmds:cmds(rest),tgt:right,ln,text:t}}
+
+function compile(src){
+ const D=[],seen=new Set(),err=(ln,m)=>D.push({l:'error',ln,m}),wrn=(ln,m)=>{if(!seen.has(ln+m)){seen.add(ln+m);D.push({l:'warn',ln,m})}};
+ const C={outs:[],ins:[],stops:new Map(),start:'start',max:Infinity,alpha:null,head:0};
+ function cfg(line,ln){if(!line.trim())return;const m=line.match(/^\s*(\w+)\s*:\s*(.*?)\s*$/);if(!m)return err(ln,'Unrecognised configuration line');
+  let k=m[1],v=m[2],lab=null;const lm=v.match(/^(.*?)\s*\[([^\]]*)\]$/);if(lm&&k!=='alphabet'){v=lm[1];lab=lm[2]}
+  if(k==='input'||k==='output'){const F=fml(v);if(!F)return err(ln,'Bad formula “'+v+'” (expected e.g. 2x+1 or -2x + 9)');const f=v.replace(/\s+/g,'');(k==='input'?C.ins:C.outs).push({...F,f,lab:lab||f})}
+  else if(k==='start')C.start=v;
+  else if(k==='stop')v.split(',').map(s=>s.trim()).filter(Boolean).forEach(n=>C.stops.set(n,lab||'stop'));
+  else if(k==='max_steps'){const n=parseInt(v);n>0?C.max=n:err(ln,'max_steps must be a positive integer')}
+  else if(k==='alphabet')C.alpha=new RegExp('^'+QS+'$').test(v)?unq(v):v;
+  else if(k==='head'){const n=parseInt(v);isNaN(n)?err(ln,'head must be an integer'):C.head=n}
+  else wrn(ln,'Unknown configuration key “'+k+'”')}
+ const lines=stripComments(src).split('\n'),body=lines.slice(),f=lines.findIndex(l=>l.trim());
+ if(f>=0&&lines[f].trim()==='---'){let e=lines.findIndex((l,j)=>j>f&&l.trim()==='---');
+  if(e<0){err(f+1,'Configuration block is missing its closing ---');e=lines.length}
+  for(let j=f+1;j<e;j++)cfg(lines[j],j+1);for(let j=f;j<=e&&j<lines.length;j++)body[j]=''}
+ const defs=new Map();let cur=null;
+ body.forEach((line,j)=>{const ln=j+1;if(!line.trim())return;
+  const h=line.match(/^\s*([A-Za-z_]\w*)\s*(?:\(([^)]*)\))?\s*:\s*$/);
+  if(h){const ps=h[2]?h[2].split(',').map(s=>s.trim()).filter(Boolean):[];
+   if(RES.has(h[1])||ps.some(p=>RES.has(p)||!/^[A-Za-z_]\w*$/.test(p)))err(ln,'Name clashes with a built-in command or keyword');
+   if(defs.has(h[1]))err(ln,'State “'+h[1]+'” is defined twice');
+   cur={name:h[1],params:ps,rules:[]};defs.set(h[1],cur);return}
+  if(!cur)return err(ln,'Rule appears before any state header');
+  try{cur.rules.push(parseRule(line,ln))}catch(e){err(ln,e.message)}});
+ function sym(a,neg){let k,set;
+  if(a==='none'||a==='_')k='none';else if(a==='any'||a==='*')k='any';
+  else if(a[0]==="'"){k='set';set=new Set(unq(a));if(!set.size)throw new Error('Empty symbol string')}
+  else if(/^\d$/.test(a)){k='set';set=new Set([a])}
+  else throw new Error('Unknown symbol “'+a+'” (put letters in quotes)');return{k,set,neg}}
+ function psym(a){if(a==='none'||a==='_')return null;let s;
+  if(a[0]==="'")s=unq(a);else if(/^\d$/.test(a))s=a;else throw new Error('Cannot print “'+a+'”');
+  if([...s].length!==1)throw new Error('P prints exactly one symbol');if(!inA(C,s))throw new Error('Symbol “'+s+'” is not in the alphabet');return s}
+ const inst=new Map(),q=[];
+ function ref(name,args){const key=args.length?name+'('+args.join(',')+')':name;
+  if(!inst.has(key)){if(inst.size>1500)throw new Error('Too many macro instances (runaway recursion?)');
+   const d=defs.get(name);if(d&&d.params.length!==args.length)throw new Error('“'+name+'” expects '+d.params.length+' argument(s), got '+args.length);
+   const o={key,d,args,rules:[]};inst.set(key,o);q.push(o)}return key}
+ function expand(o){if(!o.d)return;const env=Object.create(null);o.d.params.forEach((p,i)=>env[p]=o.args[i]);
+  const sub=t=>t.replace(SUBS,x=>x in env?env[x]:x);
+  for(const r of o.d.rules){try{
+   const pat=sym(sub(r.pat.a),r.pat.neg),cm=r.cmds.map(c=>c.t==='P'?{t:'P',s:psym(sub(c.a))}:c);let tk=o.key;
+   if(r.tgt){const c=call(sub(r.tgt));if(!defs.has(c.name))wrn(r.ln,'State “'+c.name+'” is not defined; reaching it halts the machine');tk=ref(c.name,c.args)}
+   o.rules.push({pat,cmds:cm,target:tk,ln:r.ln,text:r.text})}catch(e){err(r.ln,e.message)}}}
+ if(!defs.has(C.start))err(0,'No “'+C.start+'” state is defined');
+ else try{ref(C.start,[]);while(q.length)expand(q.shift())}catch(e){err(0,e.message)}
+ C.stops.forEach((l,n)=>{if(!defs.has(n))wrn(0,'Stop state “'+n+'” is not defined')});
+ const U=[null,'\uFFFF'];inst.forEach(o=>o.rules.forEach(r=>r.pat.set&&r.pat.set.forEach(c=>U.includes(c)||U.push(c))));
+ inst.forEach(o=>{const cov=new Set();o.rules.forEach(r=>{const m=U.filter(u=>hit(r.pat,u));
+  if(!m.length)wrn(r.ln,'Rule can never match');else if(m.every(u=>cov.has(u)))wrn(r.ln,'Unreachable rule: earlier rules already cover every symbol it matches');m.forEach(u=>cov.add(u))})});
+ return{C,inst,D,ok:!D.some(d=>d.l==='error')}}
+
+/* ---------- machine & UI ---------- */
+let P,M=null,running=false,tm=null,dt=null,isig=null;const vals={};
+const EX={
+'Binary incrementer':[`---
+input: x [binary]
+stop: done [finished]
+---
+// Add 1 to a binary number (most significant bit first)
+start:
+  0 R
+  1 R
+  _ L -> carry      // reached the end, walk back
+carry:
+  1 P0,L            // 1 + 1 = 0, keep carrying
+  0 P1 -> done
+  _ P1 -> done      // overflow: new leading 1
+done:`,'1011'],
+'Alternating 0 1':[`---
+max_steps: 40
+---
+start:
+  none P0,2R -> one
+one:
+  none P1,2R -> start`,''],
+'Macro: find a symbol':[`---
+input: x [tape]
+stop: found [found]
+stop: missing [missing]
+---
+// scan(s,f,x): walk right until x (go to s) or a blank (go to f)
+start:
+  any -> scan(found, missing, 1)
+scan(s,f,x):
+  x -> s
+  _ -> f
+  ~x R -> scan(s,f,x)`,'00100']};
+const sel=$('ex');Object.keys(EX).forEach(k=>sel.add(new Option(k)));
+
+function build(){clearTimeout(dt);dt=null;P=compile($('code').value);diag();inputs();reset()}
+function diag(){const L=P.D.slice().sort((a,b)=>a.ln-b.ln);
+ $('diag').innerHTML=L.length?L.map(d=>'<li class="'+d.l+'" data-ln="'+d.ln+'"><b>'+d.l+'</b>'+(d.ln?' · line '+d.ln:'')+' — '+esc(d.m)+'</li>').join(''):'<li class="good">✓ Compiled: '+P.inst.size+' state'+(P.inst.size==1?'':'s')+' (after macro expansion)</li>'}
+$('diag').onclick=e=>{const li=e.target.closest('li[data-ln]'),n=li&&+li.dataset.ln;if(!n)return;const t=$('code'),ls=t.value.split('\n');
+ const s=ls.slice(0,n-1).join('\n').length+(n>1?1:0);t.focus();t.setSelectionRange(s,s+(ls[n-1]||'').length)};
+function inputs(){const sig=P.C.ins.map(d=>d.lab+'|'+d.f).join('~');if(sig===isig)return;isig=sig;const box=$('ins');
+ if(!P.C.ins.length){box.innerHTML='<p class="mu">No <code>input</code> declared, so the machine starts on a blank tape.</p>';return}
+ box.innerHTML=P.C.ins.map(d=>'<label class="in"><span>'+esc(d.lab)+' · <code>'+esc(d.f)+'</code></span><input class="m" data-k="'+esc(d.lab+'|'+d.f)+'" autocomplete="off" spellcheck="false" placeholder="symbols (space or _ = blank)"></label>').join('');
+ box.querySelectorAll('input').forEach(i=>{i.value=vals[i.dataset.k]||'';i.oninput=()=>{vals[i.dataset.k]=i.value;reset()}})}
+function halt(k,m){M.halt={k,m}}
+function reset(){stopRun();M=null;if(P.ok){const C=P.C;M={tape:new Map(),pos:C.head,state:C.start,steps:0,halt:null,trace:[]};
+  const f=document.querySelectorAll('#ins input');
+  C.ins.forEach((d,i)=>{[...(f[i]?f[i].value:'')].forEach((ch,x)=>{if(ch===' '||ch==='_'||M.halt)return;
+   if(!inA(C,ch))return halt('error','Input symbol “'+ch+'” is not in the alphabet');M.tape.set(d.a*x+d.b,ch)})});
+  if(!M.halt&&C.stops.has(M.state))halt('stop','In stop state “'+M.state+'” ['+C.stops.get(M.state)+']')}
+ render()}
+function step(){if(!M||M.halt)return false;const C=P.C,sym=M.tape.has(M.pos)?M.tape.get(M.pos):null;
+ const r=P.inst.get(M.state).rules.find(r=>hit(r.pat,sym));
+ if(!r){halt('stuck','No rule matches “'+sh(sym)+'” in state “'+M.state+'”');return false}
+ for(const c of r.cmds){if(c.t==='R')M.pos+=c.n;else if(c.t==='L')M.pos-=c.n;else if(c.t==='E'||c.s===null)M.tape.delete(M.pos);else M.tape.set(M.pos,c.s)}
+ const from=M.state;M.state=r.target;M.steps++;
+ M.trace.push(M.steps+'  '+from+'  ⟨'+sh(sym)+'⟩  line '+r.ln+'  →  '+r.target);if(M.trace.length>80)M.trace.shift();
+ if(C.stops.has(M.state))halt('stop','Stopped in “'+M.state+'” ['+C.stops.get(M.state)+']');
+ else if(M.steps>=C.max)halt('max','Reached max_steps ('+C.max+')');
+ return !M.halt}
+function tick(){if(!running)return;const v=+$('spd').value,sps=speed(v);let more=true;
+ if(sps<=30){more=step();tm=setTimeout(tick,1000/sps)}
+ else{const t0=performance.now();for(let i=0;i<Math.ceil(sps/60)&&more;i++)more=step();tm=setTimeout(tick,16)}
+ if(!more)stopRun();render()}
+const speed=v=>Math.max(1,Math.round(Math.pow(10,v*.033)));
+function stopRun(){running=false;clearTimeout(tm)}
+function flush(){if(dt)build()}
+$('run').onclick=()=>{flush();if(running){stopRun();return render()}if(!P.ok)return;if(!M||M.halt)reset();if(!M||M.halt)return;running=true;tick();render()};
+$('step').onclick=()=>{flush();stopRun();if(!P.ok)return;if(!M||M.halt)reset();step();render()};
+$('rst').onclick=()=>{flush();reset()};
+$('spd').oninput=()=>{$('spv').textContent=speed(+$('spd').value)+' steps/s'};
+$('code').oninput=()=>{clearTimeout(dt);dt=setTimeout(build,250)};
+$('code').onkeydown=e=>{if(e.key==='Tab'){e.preventDefault();e.target.setRangeText('  ',e.target.selectionStart,e.target.selectionEnd,'end')}};
+$('load').onclick=()=>$('file').click();
+$('file').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{$('code').value=t;build()});e.target.value=''};
+sel.onchange=()=>{const e=EX[sel.value];$('code').value=e[0];isig=null;build();const i=document.querySelector('#ins input');if(i&&e[1]){i.value=e[1];vals[i.dataset.k]=e[1];reset()}};
+addEventListener('resize',()=>render());
+
+function render(){tapeR();info();outs();$('trace').textContent=M?M.trace.slice().reverse().join('\n'):'';
+ const b=$('run');b.textContent=running?'⏸ Pause':(M&&M.steps&&!M.halt?'▶ Resume':'▶ Run');b.disabled=$('step').disabled=!P.ok}
+function tapeR(){const el=$('tape'),n=Math.max(7,Math.floor(el.clientWidth/48)|1),h=n>>1,c=M?M.pos:P.C.head;let s='';
+ for(let i=-h;i<=h;i++){const p=c+i,v=M&&M.tape.has(p)?M.tape.get(p):'';s+='<div class="c'+(i?'':' h')+'"><b>'+esc(v)+'</b><i>'+p+'</i></div>'}el.innerHTML=s}
+function info(){const d=$('info');
+ if(!P.ok){d.innerHTML='<dt>Status</dt><dd class="s-err">Fix the errors listed under the program</dd>';return}
+ const sym=M.tape.has(M.pos)?M.tape.get(M.pos):null,nx=!M.halt&&P.inst.get(M.state).rules.find(r=>hit(r.pat,sym)),ks=[...M.tape.keys()];
+ let st=M.halt?M.halt.m:running?'Running':M.steps?'Paused':'Ready',cl=M.halt?(M.halt.k==='error'?'s-err':'s-halt'):running?'s-run':'';
+ const row=(k,v,c)=>'<dt>'+k+'</dt><dd class="'+(c||'')+'">'+v+'</dd>';
+ d.innerHTML=row('Status',esc(st),cl)+row('State','<code>'+esc(M.state)+'</code>')+row('Reading',sym===null?'blank':'<code>'+esc(sym)+'</code>')
+  +row('Head position',M.pos)+row('Steps',M.steps)
+  +row('Next rule',nx?'line '+nx.ln+': <code>'+esc(nx.text)+'</code>':'—')
+  +row('Tape',ks.length?ks.length+' symbol'+(ks.length>1?'s':'')+', positions '+Math.min(...ks)+' … '+Math.max(...ks):'empty')}
+function outs(){const el=$('outs');if(!M){el.innerHTML='<p class="mu">—</p>';return}
+ const ks=[...M.tape.keys()].sort((a,b)=>a-b),defs=P.C.outs.length?P.C.outs:[{lab:'all data',a:1,b:0}];
+ el.innerHTML=defs.map(d=>'<div class="o"><span>'+esc(d.lab)+'</span><code>'+(esc(ks.filter(p=>(p-d.b)%d.a===0).map(p=>M.tape.get(p)).join(''))||'&nbsp;')+'</code></div>').join('')}
+$('spd').oninput();sel.onchange();
+</script></body></html>
